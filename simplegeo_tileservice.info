@@ -1,0 +1,6 @@
+; $Id$
+name = Simple Geo Services
+core = 6.x
+description = Services support for Simple Geo
+package = Geo
+dependencies[] = simple_geo

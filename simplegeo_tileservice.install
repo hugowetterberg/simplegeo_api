@@ -3,62 +3,51 @@
 
 /**
  * @file
- * Install file for the simple geo service module
+ * Install file for the simple geo tile service
  */
 
-function simplegeoservices_install() {
-  drupal_install_schema('simplegeoservices');
+function simplegeo_tileservice_install() {
+  drupal_install_schema('simplegeo_tileservice');
 }
 
-function simplegeoservices_uninstall() {
-  drupal_uninstall_schema('simplegeoservices');
+function simplegeo_tileservice_uninstall() {
+  drupal_uninstall_schema('simplegeo_tileservice');
 }
 
-function simplegeoservices_schema() {
+function simplegeo_tileservice_schema() {
   $schema = array();
 
-  $schema['simplegeoservices_tilecache'] = array(
+  $schema['simplegeo_tileservice_tilecache'] = array(
     'fields' => array(
-
       'x' => array(
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
-
       'y' => array(
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
-
       'zoom' => array(
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
-
       'layer' => array(
         'type' => 'varchar',
         'length' => 32,
         'not null' => TRUE,
       ),
-
       'data' => array(
         'type' => 'text',
         'size' => 'medium',
       ),
     ),
-
     'primary key' => array('x', 'y', 'zoom', 'layer'),
-
-    'indexes' => array(
-      'item' => array('x', 'y', 'zoom', 'layer'),
-    ),
-    ''
   );
 
   return $schema;

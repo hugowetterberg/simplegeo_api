@@ -4,6 +4,12 @@
 /**
  * @file
  * Services support for Simple Geo data.
+ *
+ * Contains code and concepts from Mika Tuupola's blog post "Introduction to
+ * Marker Clustering With Google Maps" http://www.appelsiini.net/2008/11/introduction-to-marker-clustering-with-google-maps
+ *
+ * The gmaptile.php comes from http://mapki.com/wiki/GMapTile and it needs to
+ * be updated as it uses the old 17-0 zoom levels instead of 0-17.
  */
 
 /*

@@ -1,6 +1,7 @@
 <?php
+// $Id$
 
-require_once(drupal_get_path('module', 'simplegeo_tileservice') .'/gmaptile.php');
+require_once('gmaptile.php');
 
 define('SIMPLEGEOTILES_OFFSET', 268435456);
 define('SIMPLEGEOTILES_RADIUS', 85445659.4471); /* $offset / pi() */
@@ -10,7 +11,14 @@ define('SIMPLEGEOTILES_MIN_ZOOM', 7);
 define('SIMPLEGEOTILES_MAX_NODES', 20);
 define('SIMPLEGEOTILES_ALLOWED_BOUNDS', '58.0546319113729 7.239990234375,53.79416183737104 14.908447265625');
 
-function _simplegeo_tileservice_serve_tiles($zoom, $from, $to, $layers) {
+function _simplegeo_tileservice_index($z, $x, $y, $layers, $width=1, $height=1) {
+  if (is_string($layers)) {
+    $layers = split('/,/', $layers);
+  }
+  return _simplegeo_tileservice_serve_tiles($z, $x, $y, $layers, $width, $height);
+}
+
+function _simplegeo_tileservice_serve_tiles($zoom, $fromx, $fromy, $layers, $width, $height) {
 
   // TODO: Implement allowed bounds and zoom check! /Anders
   $allowed_bounds = simple_geo_coordinates_to_array(variable_get('simplegeo_tileservice_allowed_bounds', SIMPLEGEOTILES_ALLOWED_BOUNDS));
@@ -19,26 +27,23 @@ function _simplegeo_tileservice_serve_tiles($zoom, $from, $to, $layers) {
 
   $json = array();
 
-  $layerdef = simplegeo_tileservice_get_layers();
+  $layer_definitions = simplegeo_tileservice_get_layers();
 
-  list($fromx, $fromy) = preg_split('/-/', $from);
-  list($tox, $toy) = preg_split('/-/', $to);
-
-  $layers = preg_split('/-/', $layers);
+  $tox = $fromx + $width;
+  $toy = $fromy + $height;
 
   $layer_result = array();
 
   foreach ($layers as $layer) {
-    $tiles_result = array();
-    $layerdef_layer = $layerdef[$layer];
-    $type = $layerdef_layer['nodetype'];
+    if (isset($layer_definitions[$layer])) {
+      $tiles_result = array();
+      $layerdef = $layer_definitions[$layer];
 
-    if (isset($type)) {
       for ($y = $fromy; $y <= $toy; $y++) {
         for ($x = $fromx; $x <= $tox; $x++) {
           $data = simplegeo_tileservice_read_cache($x, $y, $zoom, $layer);
           if (!$data) {
-            $data = _simplegeo_tileservice_get_cluster($x, $y, $zoom, $layerdef_layer);
+            $data = _simplegeo_tileservice_get_cluster($x, $y, $zoom, $layerdef);
             simplegeo_tileservice_write_cache($x, $y, $zoom, $layer, $data);
           }
           if (!empty($data)) {
@@ -46,9 +51,9 @@ function _simplegeo_tileservice_serve_tiles($zoom, $from, $to, $layers) {
           }
         }
       }
-    }
 
-    $json[] =  $layer .':['. join(",", $tiles_result) .']';
+      $json[] =  $layer . ':[' . join(",", $tiles_result) . ']';
+    }
   }
 
   print '{'. join(",", $json) .'}';
@@ -120,7 +125,8 @@ function _simplegeo_tileservice_coord2tile($coords, $zoom) {
 }
 
 function _simplegeo_tileservice_get_cluster($x, $y, $zoom, $layer) {
-  $data = _simplegeo_tileservice_get_nodes($x, $y, $zoom, $layer);
+  $type = simplegeo_tileservice_get_layer_type($layer['type']);
+  $data = call_user_func($type['callback'], $x, $y, $zoom, $layer, $type);
   if (!empty($data)) {
     // Specifie the max distance between markers to cluster on
     $distance = 50;
@@ -130,7 +136,7 @@ function _simplegeo_tileservice_get_cluster($x, $y, $zoom, $layer) {
   return NULL;
 }
 
-function _simplegeo_tileservice_get_nodes($x, $y, $zoom, $layer) {
+function _simplegeo_tileservice_get_nodes($x, $y, $zoom, $layer, $type) {
   // Switch zoom level (gmaptile users the old 17-0 levels instead of 0-17) TODO: fix this in gmaptile.php
   $zoom = 17 - $zoom;
   $top_left = _simplegeo_tileservice_tile2coord($x, $y, $zoom);

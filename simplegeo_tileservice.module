@@ -28,41 +28,102 @@
  *            "AND".
 */
 
+/**
+ * Returns the named layer or NULL if the layer
+ * doesn't exist.
+ *
+ * @param string $name
+ * @return array
+ */
+function simplegeo_tileservice_get_layer($name) {
+  $layer = NULL;
+  $layers = simplegeo_tileservice_get_layers();
+  if (isset($layers[$name])) {
+    $layer = $layers[$name];
+  }
+  return $layer;
+}
 
 /**
- * Returns all the layers in the tile service
+ * Returns all the layers in the tile service.
  *
  * @return array
  */
 function simplegeo_tileservice_get_layers() {
   static $layers;
+  $cache = !isset($layers);
+  $cache_key = 'simplegeo_tileservice:layers';
+
+  if (!$layers && ($cache = cache_get($cache_key)) && isset($cache->data)) {
+    $cache = FALSE;
+    $layers = $cache->data;
+  }
 
   if (!$layers) {
     $layers = module_invoke_all('simplegeo_tileservice_layers');
     drupal_alter('simplegeo_tileservice_layers', $layers);
+
+    // Get rid of layers with invalid types
+    $types = simplegeo_tileservice_get_layer_types();
+    foreach ($layers as $name => $def) {
+      if (!isset($def['type']) || !isset($types[$def['type']])) {
+        unset($types[$name]);
+      }
+    }
+  }
+
+  if ($cache) {
+    cache_set($cache_key, $layers);
   }
 
   return $layers;
 }
 
 /**
- * Returns all the layer types for the tile service
+ * Returns the named layer type or NULL if the layer type
+ * doesn't exist.
+ *
+ * @param string $name
+ * @return array
+ */
+function simplegeo_tileservice_get_layer_type($name) {
+  $type = NULL;
+  $types = simplegeo_tileservice_get_layer_types();
+  if (isset($types[$name])) {
+    $type = $types[$name];
+  }
+  return $type;
+}
+
+/**
+ * Returns all the layer types for the tile service.
  *
  * @return array
  */
 function simplegeo_tileservice_get_layer_types() {
   static $types;
+  $cache = !isset($types);
+  $cache_key = 'simplegeo_tileservice:types';
+
+  if (!$types && ($cache = cache_get($cache_key)) && isset($cache->data)) {
+    $cache = FALSE;
+    $types = $cache->data;
+  }
 
   if (!$types) {
     $types = module_invoke_all('simplegeo_tileservice_layer_types');
     drupal_alter('simplegeo_tileservice_layer_types', $types);
   }
 
+  if ($cache) {
+    cache_set($cache_key, $types);
+  }
+
   return $types;
 }
 
 /**
- * Implementation of hook_simplegeo_tileservice_layer_types
+ * Implementation of hook_simplegeo_tileservice_layer_types().
  *
  * @return void
  */
@@ -77,7 +138,7 @@ function simplegeo_tileservice_simplegeo_tileservice_layers() {
 }
 
 /**
- * Implementation of hook_simplegeo_tileservice_layers
+ * Implementation of hook_simplegeo_tileservice_layers().
  *
  * @return void
  */
@@ -89,23 +150,66 @@ function simplegeo_tileservice_simplegeo_tileservice_layer_types() {
   );
 }
 
-function simplegeo_tileservice_menu() {
-  $menu = array();
-  // simplegeo/tiles/13/0-0/3-3/news-smileys
-  $menu['simplegeo/tiles/%/%/%/%'] = array(
-      'file' => 'simplegeo_tileservice.inc',
-      'page callback' => '_simplegeo_tileservice_serve_tiles',
-      'page arguments' => array(2, 3, 4, 5),
-      'access arguments' => array('access content'),
-      'type' => MENU_CALLBACK,
+/**
+ * Implementation of hook_service_resource().
+ */
+function simplegeo_tileservice_service_resource() {
+  return array(
+    'simple-geo-layer' => array(
+      '#index' => array(
+        '#file' => drupal_get_path('module', 'simplegeo_tileservice') . '/simplegeo_tileservice.inc',
+        '#callback' => '_simplegeo_tileservice_index',
+        '#args' => array(
+          array(
+            '#name' => 'z',
+            '#optional' => TRUE,
+            '#type' => 'int',
+            '#description' => 'The zoom level for the tile.',
+            '#default value' => 0,
+            '#source' => array('param' => 'z'),
+          ),
+          array(
+            '#name' => 'x',
+            '#type' => 'int',
+            '#description' => 'The x-index of the tile.',
+            '#default value' => 0,
+            '#source' => array('param' => 'x'),
+          ),
+          array(
+            '#name' => 'y',
+            '#type' => 'int',
+            '#description' => 'The y-index of the tile.',
+            '#default value' => 0,
+            '#source' => array('param' => 'y'),
+          ),
+          array(
+            '#name' => 'layers',
+            '#type' => 'string',
+            '#description' => 'The the comma-separated list of layers to return.',
+            '#default value' => '',
+            '#source' => array('param' => 'layers'),
+          ),
+          array(
+            '#name' => 'width',
+            '#optional' => TRUE,
+            '#type' => 'int',
+            '#description' => 'Supply a width (number of tiles) if more than a single tile should be returned.',
+            '#default value' => 1,
+            '#source' => array('param' => 'layers'),
+          ),
+          array(
+            '#name' => 'height',
+            '#optional' => TRUE,
+            '#type' => 'int',
+            '#description' => 'Supply a height (number of tiles) if more than a single tile should be returned.',
+            '#default value' => 1,
+            '#source' => array('param' => 'layers'),
+          ),
+        ),
+        '#access arguments' => array('access content'),
+      ),
+    ),
   );
-  $menu['simplegeo/cache/clear'] = array(
-      'file' => 'simplegeo_tileservice.inc',
-      'page callback' => '_simplegeo_tileservice_clear_all_cache',
-      'access arguments' => array('administer site configuration'),
-      'type' => MENU_CALLBACK,
-  );
-  return $menu;
 }
 
 /**

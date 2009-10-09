@@ -205,7 +205,8 @@ function simplegeo_tileservice_nodeapi(&$node, $op, $a3) {
 }
 
 function simplegeo_tileservice_read_cache($x, $y, $zoom, $layer) {
-  $sql =  "SELECT data FROM {simplegeo_tileservice_tilecache} WHERE x = %d and y = %d and zoom = %d and layer = '%s'";
+  $sql =  "SELECT data FROM {simplegeo_tileservice_tilecache}
+    WHERE x = %d AND y = %d AND zoom = %d AND layer = '%s'";
 
   $res = db_query($sql, $x, $y, $zoom, $layer);
   if ($obj = db_fetch_object($res)) {
@@ -216,21 +217,25 @@ function simplegeo_tileservice_read_cache($x, $y, $zoom, $layer) {
 }
 
 function simplegeo_tileservice_write_cache($x, $y, $zoom, $layer, $data) {
-
-  $cache_row = db_result(db_query("SELECT x FROM {simplegeo_tileservice_tilecache} WHERE x = %d and y = %d and zoom = %d and layer = '%s'", $x, $y, $zoom, $layer));
+  $cache_row = db_result(db_query("SELECT COUNT(x) FROM {simplegeo_tileservice_tilecache}
+    WHERE x = %d AND y = %d AND zoom = %d AND layer = '%s'", $x, $y, $zoom, $layer));
 
   if ($cache_row) {
-    $sql =  "UPDATE {simplegeo_tileservice_tilecache} SET data = '%s' WHERE x = %d AND y = %d AND zoom = %d AND layer = '%s'";
+    $sql =  "UPDATE {simplegeo_tileservice_tilecache}
+      SET data = '%s'
+      WHERE x = %d AND y = %d AND zoom = %d AND layer = '%s'";
     return db_query($sql, $data, $x, $y, $zoom, $layer);
   }
   else {
-    $sql =  "INSERT INTO {simplegeo_tileservice_tilecache} (x,y, zoom, layer, data) VALUES (%d, %d, %d, '%s', '%s')";
+    $sql =  "INSERT INTO {simplegeo_tileservice_tilecache} (x,y, zoom, layer, data)
+      VALUES (%d, %d, %d, '%s', '%s')";
     return db_query($sql, $x, $y, $zoom, $layer, $data);
   }
 }
 
 function simplegeo_tileservice_clear_cache($x, $y, $zoom, $layer) {
-  $sql =  "DELETE FROM {simplegeo_tileservice_tilecache} WHERE x = %d AND y = %d AND zoom = %d AND layer = '%s'";
+  $sql =  "DELETE FROM {simplegeo_tileservice_tilecache}
+    WHERE x = %d AND y = %d AND zoom = %d AND layer = '%s'";
 
   return db_query($sql, $x, $y, $zoom, $layer);
 }

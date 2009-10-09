@@ -347,6 +347,10 @@ function simplegeo_tileservice_pixel_distance($lat1, $lon1, $lat2, $lon2, $zoom)
   $x2 = simplegeo_tileservice_lon_to_x($lon2);
   $y2 = simplegeo_tileservice_lat_to_y($lat2);
 
+  // Love the use of bitwise op here. A bitwise shift by one doubles a value
+  // and that's the principle behind gmaps zoom levels. Each zoom-level divides
+  // the each tile into four tiles, thus providing tiles with half the width
+  // and height and one fourth of the area.
   return sqrt(pow(($x1-$x2), 2) + pow(($y1-$y2), 2)) >> (21 - $zoom);
 }
 

@@ -16,7 +16,7 @@ define('SIMPLEGEOTILES_MIN_ZOOM', 7);
 define('SIMPLEGEOTILES_MAX_NODES', 20);
 define('SIMPLEGEOTILES_ALLOWED_BOUNDS', '58.0546319113729 7.239990234375,53.79416183737104 14.908447265625');
 
-/* 
+/*
  * Specifying layer properties.
  * Avaiable settings:
  *  nodetype  String. the node type name. Requeried
@@ -31,42 +31,79 @@ define('SIMPLEGEOTILES_ALLOWED_BOUNDS', '58.0546319113729 7.239990234375,53.7941
  *            the query in _simplegeo_tileservice_get_nodes(). Don't include
  *            "AND".
 */
+
+
+/**
+ * Returns all the layers in the tile service
+ *
+ * @return array
+ */
 function simplegeo_tileservice_get_layers() {
+  static $layers;
+
+  if (!$layers) {
+    $layers = array();
+
+    $modules = module_implements('simplegeo_tileservice_layers');
+    foreach ($modules as $module) {
+      call_user_func_array($module . '_simplegeo_tileservice_layers', array(&$layers));
+    }
+
+    drupal_alter('simplegeo_tileservice_layers', $layers);
+  }
+
+  return $layers;
+}
+
+/**
+ * Returns all the layer types for the tile service
+ *
+ * @return array
+ */
+function simplegeo_tileservice_get_layer_types() {
+  static $types;
+
+  if (!$types) {
+    $types = array();
+
+    $modules = module_implements('simplegeo_tileservice_layer_types');
+    foreach ($modules as $module) {
+      $mtypes = call_user_func($module . '_simplegeo_tileservice_layer_types');
+      if ($mtypes) {
+        $types = array_merge($types, $mtypes);
+      }
+    }
+    drupal_alter('simplegeo_tileservice_layer_types', $types);
+  }
+
+  return $types;
+}
+
+/**
+ * Implementation of hook_simplegeo_tileservice_layer_types
+ *
+ * @return void
+ */
+function simplegeo_tileservice_simplegeo_tileservice_layers() {
   return array(
-    'news' => array(
-      'nodetype' => 'news',
-      'max_age' => '2 weeks',
-      'title' => t('News'),
-      'checked' => TRUE
+    'nodes' => array(
+      'type' => 'node_sql',
+      'title' => t('Nodes'),
+      'active' => TRUE,
     ),
-    'events' => array(
-      'nodetype' => 'event',
-      'title' => t('Events'),
-      'checked' => TRUE,
-      'joins' => array('INNER JOIN {content_type_event} t ON n.vid = t.vid'),
-      'wheres' => array('t.field_time_value2 >= ' . time()),
+  );
+}
+
+/**
+ * Implementation of hook_simplegeo_tileservice_layers
+ *
+ * @return void
+ */
+function simplegeo_tileservice_simplegeo_tileservice_layer_types() {
+  return array(
+    'node_sql' => array(
+      'callback' => '_simplegeo_tileservice_get_nodes',
     ),
-    'images' => array(
-      'nodetype' => 'image',
-      'title' => t('Photos'),
-      'checked' => TRUE
-    ),
-    'groups' => array(
-      'nodetype' => 'city_group',
-      'title' => t('Groups'),
-      'checked' => TRUE
-    ),
-    'gas_stations' => array(
-      'nodetype' => 'gas_station',
-      'title' => t('Gas prices'),
-      'checked' => TRUE
-    ),
-    'cities' => array(
-      'nodetype' => 'city',
-      'title' => t('Citites'),
-      'checked' => FALSE
-    ),
-    //'smileys' => array('nodetype' => 'smiley', 'title' => t('Smileys'), 'checked' => TRUE),
   );
 }
 
@@ -126,9 +163,7 @@ function _simplegeo_tileservice_serve_tiles($zoom, $from, $to, $layers) {
     }
 
     $json[] =  $layer .':['. join(",", $tiles_result) .']';
-
   }
-
 
   print '{'. join(",", $json) .'}';
   exit;

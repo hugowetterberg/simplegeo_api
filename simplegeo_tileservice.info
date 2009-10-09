@@ -4,3 +4,4 @@ core = 6.x
 description = Exposes data from simple geo as tiles with clustered markers
 package = Geo
 dependencies[] = simple_geo
+dependencies[] = services

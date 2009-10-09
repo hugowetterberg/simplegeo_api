@@ -167,5 +167,3 @@ class GMapTile {
 }
 
 GMapTile::_init();
-
-?>

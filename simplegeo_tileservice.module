@@ -32,13 +32,7 @@ function simplegeo_tileservice_get_layers() {
   static $layers;
 
   if (!$layers) {
-    $layers = array();
-
-    $modules = module_implements('simplegeo_tileservice_layers');
-    foreach ($modules as $module) {
-      call_user_func_array($module . '_simplegeo_tileservice_layers', array(&$layers));
-    }
-
+    $layers = module_invoke_all('simplegeo_tileservice_layers');
     drupal_alter('simplegeo_tileservice_layers', $layers);
   }
 
@@ -54,15 +48,7 @@ function simplegeo_tileservice_get_layer_types() {
   static $types;
 
   if (!$types) {
-    $types = array();
-
-    $modules = module_implements('simplegeo_tileservice_layer_types');
-    foreach ($modules as $module) {
-      $mtypes = call_user_func($module . '_simplegeo_tileservice_layer_types');
-      if ($mtypes) {
-        $types = array_merge($types, $mtypes);
-      }
-    }
+    $types = module_invoke_all('simplegeo_tileservice_layer_types');
     drupal_alter('simplegeo_tileservice_layer_types', $types);
   }
 

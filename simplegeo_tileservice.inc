@@ -41,9 +41,10 @@ function _simplegeo_tileservice_serve_tiles($zoom, $fromx, $fromy, $layers, $wid
 
       for ($y = $fromy; $y <= $toy; $y++) {
         for ($x = $fromx; $x <= $tox; $x++) {
-          $data = simplegeo_tileservice_read_cache($x, $y, $zoom, $layer);
+          #$data = simplegeo_tileservice_read_cache($x, $y, $zoom, $layer);
           if (!$data) {
             $data = _simplegeo_tileservice_get_cluster($x, $y, $zoom, $layerdef);
+            $tiles_result[] = $data;
             simplegeo_tileservice_write_cache($x, $y, $zoom, $layer, $data);
           }
           if (!empty($data)) {
@@ -56,8 +57,7 @@ function _simplegeo_tileservice_serve_tiles($zoom, $fromx, $fromy, $layers, $wid
     }
   }
 
-  print '{'. join(",", $json) .'}';
-  exit;
+  return array('{'. join(",", $json) .'}');
 }
 
 
@@ -126,6 +126,11 @@ function _simplegeo_tileservice_coord2tile($coords, $zoom) {
 
 function _simplegeo_tileservice_get_cluster($x, $y, $zoom, $layer) {
   $type = simplegeo_tileservice_get_layer_type($layer['type']);
+
+  if (isset($type['file'])) {
+    require_once($type['file']);
+  }
+
   $data = call_user_func($type['callback'], $x, $y, $zoom, $layer, $type);
   if (!empty($data)) {
     // Specifie the max distance between markers to cluster on
@@ -153,10 +158,12 @@ function _simplegeo_tileservice_get_nodes($x, $y, $zoom, $layer, $type) {
 
   // Define the WHERE part of the query. We first define some defaults.
   $wheres = array(
-    "n.type = '%s'",
     'n.status <> 0',
     "Contains(Envelope(GeomFromText('LineString(%s %s,%s %s)')), ps.position)",
   );
+  if (isset($layer['nodetype'])) {
+    $wheres[] = "n.type = '%s'";
+  }
 
   // Add any WHEREs defined in the layer definition.
   if (is_array($layer['wheres'])) {
@@ -169,11 +176,14 @@ function _simplegeo_tileservice_get_nodes($x, $y, $zoom, $layer, $type) {
   }
 
   // Add the WHEREs to the query.
-  $sql .= ' WHERE ' . implode($wheres, ' AND ');
+  $sql .= ' WHERE ' . join(' AND ', $wheres);
 
   $sql .= " ORDER BY n.created";
 
-  $params = array($layer['nodetype'], $top_left['lat'], $top_left['long'], $bottom_right['lat'], $bottom_right['long']);
+  $params = array($top_left['lat'], $top_left['long'], $bottom_right['lat'], $bottom_right['long']);
+  if (isset($layer['nodetype'])) {
+    $params[] = $layer['nodetype'];
+  }
 
   $res = db_query($sql, $params);
 
@@ -184,6 +194,7 @@ function _simplegeo_tileservice_get_nodes($x, $y, $zoom, $layer, $type) {
     $nodes[] = array('lat' => (float)$point[0], 'lon' => (float)$point[1], 'count' => 1, 'nid' => (int)$node->nid);
 
   }
+
   return $nodes;
 
 }

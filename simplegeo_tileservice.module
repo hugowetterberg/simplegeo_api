@@ -145,69 +145,68 @@ function simplegeo_tileservice_simplegeo_tileservice_layers() {
 function simplegeo_tileservice_simplegeo_tileservice_layer_types() {
   return array(
     'node_sql' => array(
-      'file' => drupal_get_path('module', 'simplegeo_tileservice') . '/tileservice.inc',
       'callback' => '_simplegeo_tileservice_get_nodes',
     ),
   );
 }
 
 /**
- * Implementation of hook_services_resources().
+ * Implementation of hook_service_resource().
  */
-function simplegeo_tileservice_services_resources() {
+function simplegeo_tileservice_service_resource() {
   return array(
     'simple-geo-layer' => array(
-      'index' => array(
-        'file' => array('module' => 'simplegeo_tileservice', 'file' => 'inc'),
-        'callback' => '_simplegeo_tileservice_index',
-        'args' => array(
+      '#index' => array(
+        '#file' => drupal_get_path('module', 'simplegeo_tileservice') . '/simplegeo_tileservice.inc',
+        '#callback' => '_simplegeo_tileservice_index',
+        '#args' => array(
           array(
-            'name' => 'z',
-            'optional' => TRUE,
-            'type' => 'int',
-            'description' => 'The zoom level for the tile.',
-            'default value' => 0,
-            'source' => array('param' => 'z'),
+            '#name' => 'z',
+            '#optional' => TRUE,
+            '#type' => 'int',
+            '#description' => 'The zoom level for the tile.',
+            '#default value' => 0,
+            '#source' => array('param' => 'z'),
           ),
           array(
-            'name' => 'x',
-            'type' => 'int',
-            'description' => 'The x-index of the tile.',
-            'default value' => 0,
-            'source' => array('param' => 'x'),
+            '#name' => 'x',
+            '#type' => 'int',
+            '#description' => 'The x-index of the tile.',
+            '#default value' => 0,
+            '#source' => array('param' => 'x'),
           ),
           array(
-            'name' => 'y',
-            'type' => 'int',
-            'description' => 'The y-index of the tile.',
-            'default value' => 0,
-            'source' => array('param' => 'y'),
+            '#name' => 'y',
+            '#type' => 'int',
+            '#description' => 'The y-index of the tile.',
+            '#default value' => 0,
+            '#source' => array('param' => 'y'),
           ),
           array(
-            'name' => 'layers',
-            'type' => 'string',
-            'description' => 'The the comma-separated list of layers to return.',
-            'default value' => '',
-            'source' => array('param' => 'layers'),
+            '#name' => 'layers',
+            '#type' => 'string',
+            '#description' => 'The the comma-separated list of layers to return.',
+            '#default value' => '',
+            '#source' => array('param' => 'layers'),
           ),
           array(
-            'name' => 'width',
-            'optional' => TRUE,
-            'type' => 'int',
-            'description' => 'Supply a width (number of tiles) if more than a single tile should be returned.',
-            'default value' => 1,
-            'source' => array('param' => 'layers'),
+            '#name' => 'width',
+            '#optional' => TRUE,
+            '#type' => 'int',
+            '#description' => 'Supply a width (number of tiles) if more than a single tile should be returned.',
+            '#default value' => 1,
+            '#source' => array('param' => 'layers'),
           ),
           array(
-            'name' => 'height',
-            'optional' => TRUE,
-            'type' => 'int',
-            'description' => 'Supply a height (number of tiles) if more than a single tile should be returned.',
-            'default value' => 1,
-            'source' => array('param' => 'layers'),
+            '#name' => 'height',
+            '#optional' => TRUE,
+            '#type' => 'int',
+            '#description' => 'Supply a height (number of tiles) if more than a single tile should be returned.',
+            '#default value' => 1,
+            '#source' => array('param' => 'layers'),
           ),
         ),
-        'access arguments' => array('access content'),
+        '#access arguments' => array('access content'),
       ),
     ),
   );
@@ -247,7 +246,6 @@ function simplegeo_tileservice_nodeapi(&$node, $op, $a3) {
   }
   if ($op == 'delete') {
     if (isset($node->simple_geo_position)) {
-      require_once('simplegeo_tileservice.inc');
       simplegeo_tileservice_clear_node_cache($node->type, $node->simple_geo_position);
     }
   }

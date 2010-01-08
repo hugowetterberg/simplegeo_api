@@ -5,11 +5,6 @@ require_once('gmaptile.php');
 
 define('SIMPLEGEOTILES_OFFSET', 268435456);
 define('SIMPLEGEOTILES_RADIUS', 85445659.4471); /* $offset / pi() */
-define('SIMPLEGEOTILES_MAX_NODES', 20);
-define('SIMPLEGEOTILES_MAX_ZOOM', 17);
-define('SIMPLEGEOTILES_MIN_ZOOM', 7);
-define('SIMPLEGEOTILES_MAX_NODES', 20);
-define('SIMPLEGEOTILES_ALLOWED_BOUNDS', '58.0546319113729 7.239990234375,53.79416183737104 14.908447265625');
 
 function _simplegeo_tileservice_index($z, $x, $y, $layers, $width=1, $height=1) {
   if (is_string($layers)) {

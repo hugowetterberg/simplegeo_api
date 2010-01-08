@@ -12,21 +12,12 @@
  * be updated as it uses the old 17-0 zoom levels instead of 0-17.
  */
 
-/*
- * Specifying layer properties.
- * Avaiable settings:
- *  nodetype  String. the node type name. Requeried
- *  title     String. Pretty title of the layer. Use t(). Required.
- *  checked   Binary. Whether the layer should be on be default.
- *  max_age   String. Specifies the maximum age of the node from the created
- *            date. E.g "2 days". Parsed with strtottime().
- *  joins     Array. Any extra JOINS that should be added to the query in
- *            _simplegeo_tileservice_get_nodes()
- *            E.g array('INNER JOIN {content_type_event} t ON n.vid = t.vid', ..., ...)
- *  wheres    Array. Any extra extra WHERE statements that should be added to
- *            the query in _simplegeo_tileservice_get_nodes(). Don't include
- *            "AND".
-*/
+// Define constants. These can also be useful for other modules, hence
+// they are defined and not in the include file.
+define('SIMPLEGEOTILES_MAX_ZOOM', 17);
+define('SIMPLEGEOTILES_MIN_ZOOM', 7);
+define('SIMPLEGEOTILES_MAX_NODES', 20);
+define('SIMPLEGEOTILES_ALLOWED_BOUNDS', '58.0546319113729 7.239990234375,53.79416183737104 14.908447265625');
 
 /**
  * Returns the named layer or NULL if the layer

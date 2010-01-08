@@ -157,10 +157,12 @@ function _simplegeo_tileservice_get_nodes($x, $y, $zoom, $layer, $type) {
 
   // Define the WHERE part of the query. We first define some defaults.
   $wheres = array(
-    "n.type = '%s'",
     'n.status <> 0',
     "Contains(Envelope(GeomFromText('LineString(%s %s,%s %s)')), ps.position)",
   );
+  if (isset($layer['nodetype'])) {
+    $wheres[] = "n.type = '%s'";
+  }
 
   // Add any WHEREs defined in the layer definition.
   if (is_array($layer['wheres'])) {
@@ -177,7 +179,10 @@ function _simplegeo_tileservice_get_nodes($x, $y, $zoom, $layer, $type) {
 
   $sql .= " ORDER BY n.created";
 
-  $params = array($layer['nodetype'], $top_left['lat'], $top_left['long'], $bottom_right['lat'], $bottom_right['long']);
+  $params = array($top_left['lat'], $top_left['long'], $bottom_right['lat'], $bottom_right['long']);
+  if (isset($layer['nodetype'])) {
+    $params[] = $layer['nodetype'];
+  }
 
   $res = db_query($sql, $params);
 
@@ -188,6 +193,7 @@ function _simplegeo_tileservice_get_nodes($x, $y, $zoom, $layer, $type) {
     $nodes[] = array('lat' => (float)$point[0], 'lon' => (float)$point[1], 'count' => 1, 'nid' => (int)$node->nid);
 
   }
+
   return $nodes;
 
 }

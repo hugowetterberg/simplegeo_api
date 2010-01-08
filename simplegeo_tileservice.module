@@ -225,7 +225,7 @@ function simplegeo_tileservice_nodeapi(&$node, $op, $a3) {
       if ($old_position !== $new_position) {
         // Clear the both the old and new postion if they are specified.
         // E.g in the case of an already existing node which didn't have a
-        // previous position we only clear the new postion.
+        // previous position we only clear the new position.
         if (!empty($old_position)) {
           simplegeo_tileservice_clear_node_cache($node->type, $old_position);
         }

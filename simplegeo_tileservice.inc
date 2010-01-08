@@ -125,6 +125,11 @@ function _simplegeo_tileservice_coord2tile($coords, $zoom) {
 
 function _simplegeo_tileservice_get_cluster($x, $y, $zoom, $layer) {
   $type = simplegeo_tileservice_get_layer_type($layer['type']);
+
+  if (isset($type['file'])) {
+    require_once($type['file']);
+  }
+
   $data = call_user_func($type['callback'], $x, $y, $zoom, $layer, $type);
   if (!empty($data)) {
     // Specifie the max distance between markers to cluster on

@@ -1,0 +1,6 @@
+; $Id$
+name = Simple Geo Tile Service UI
+core = 6.x
+description = Administration interface to Simple Geo Tile Service
+package = Geo
+dependencies[] = simplegeo_tileservice

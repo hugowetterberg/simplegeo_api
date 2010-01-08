@@ -22,7 +22,7 @@ function _simplegeo_tileservice_serve_tiles($zoom, $fromx, $fromy, $layers, $wid
 
   $json = array();
 
-  $layer_definitions = simplegeo_tileservice_get_layers();
+  $layer_definitions = simplegeo_tileservice_layer_load_all();
 
   $tox = $fromx + $width;
   $toy = $fromy + $height;
@@ -92,10 +92,10 @@ function simplegeo_tileservice_clear_cache($x, $y, $zoom, $layer) {
 }
 
 function simplegeo_tileservice_clear_node_cache($type, $position) {
-  $layerdef = simplegeo_tileservice_get_layers();
+  $layerdef = simplegeo_tileservice_layer_load_all();
 
   foreach ($layerdef as $layer => $layer_info ) {
-    if ($layer_info['nodetype'] == $type) {
+    if ($layer_info->layer_type == 'node_sql' && isset($layer_info->conf['node_type']) && $layer_info->conf['node_type'] == $type) {
       // Clear the cache for all zoom levels (we currently use 7-17);
       for ($zoom=7; $zoom <= 17; $zoom++) {
         $coords = _simplegeo_tileservice_coord2tile($position, $zoom);
@@ -118,14 +118,14 @@ function _simplegeo_tileservice_coord2tile($coords, $zoom) {
   return $tile->getTileCoord();
 }
 
-function _simplegeo_tileservice_get_cluster($x, $y, $zoom, $layer) {
-  $type = simplegeo_tileservice_get_layer_type($layer['type']);
+function _simplegeo_tileservice_get_cluster($x, $y, $zoom, $layer_definition) {
+  $type = simplegeo_tileservice_get_layer_type($layer_definition->layer_type);
 
   if (isset($type['file'])) {
     require_once($type['file']);
   }
 
-  $data = call_user_func($type['callback'], $x, $y, $zoom, $layer, $type);
+  $data = call_user_func($type['load callback'], $x, $y, $zoom, $layer_definition, $type);
   if (!empty($data)) {
     // Specifie the max distance between markers to cluster on
     $distance = 50;
@@ -140,57 +140,70 @@ function _simplegeo_tileservice_get_nodes($x, $y, $zoom, $layer, $type) {
   $zoom = 17 - $zoom;
   $top_left = _simplegeo_tileservice_tile2coord($x, $y, $zoom);
   $bottom_right = _simplegeo_tileservice_tile2coord($x+1, $y+1, $zoom);
-
-  // Build the query.
-  $sql = "SELECT n.type, n.nid, AsText(ps.position) AS position
-          FROM {node} n
-          INNER JOIN {simple_geo_position} ps ON n.nid = ps.nid AND ps.type = 'node' ";
-
-  if(isset($layer['joins'])) {
-    $sql .=  implode($layer['joins'], ' ');
-  }
-
-  // Define the WHERE part of the query. We first define some defaults.
-  $wheres = array(
-    'n.status <> 0',
-    "Contains(Envelope(GeomFromText('LineString(%s %s,%s %s)')), ps.position)",
-  );
-  if (isset($layer['nodetype'])) {
-    $wheres[] = "n.type = '%s'";
-  }
-
-  // Add any WHEREs defined in the layer definition.
-  if (is_array($layer['wheres'])) {
-    $wheres = array_merge($layer['wheres'], $wheres);
-  }
-
-  // If max age is defined check so the node isn't older than the specified age.
-  if (isset($layer['max_age'])) {
-    $wheres[] = 'n.created >= ' . strtotime('-' . $layer['max_age']);
-  }
-
-  // Add the WHEREs to the query.
-  $sql .= ' WHERE ' . implode($wheres, ' AND ');
-
-  $sql .= " ORDER BY n.created";
-
-  $params = array($top_left['lat'], $top_left['long'], $bottom_right['lat'], $bottom_right['long']);
-  if (isset($layer['nodetype'])) {
-    $params[] = $layer['nodetype'];
-  }
-
-  $res = db_query($sql, $params);
-
   $nodes = array();
+  // Use views as query builder if a view is specified.
+  if (module_exists('views') && $layer->conf['view'] && $view = views_get_view($layer->conf['view'])) {
+    // Sanity check; make sure the user added the bounding_box argument to the view.
+    // TODO: Add support for other displays than "default"?.
+    $argument_setting = $view->display['default']->display_options['arguments'];
+    if (is_array($argument_setting)) {
+      $first_argument_setting = current($argument_setting);
+      if ($first_argument_setting['id'] == 'bounding_box') {
+        // Create the string expected by the bounding box argument.
+        $box = $top_left['lat'] . ',' . $top_left['long'] . ',' . $bottom_right['lat'] . ',' . $bottom_right['long'];
+        $view->set_arguments(array($box));
+        $view->execute();
+        foreach ($view->result as $node) {
+          $point = explode(' ', simple_geo_clean_wkt('point', $node->simple_geo_point));
+          $nodes[] = array('lat' => (float)$point[0], 'lon' => (float)$point[1], 'count' => 1, 'nid' => (int)$node->nid);
+        }
+      }
+    }
+  }
+  // Build our own query based on layer settings.
+  else {
+    $sql = "SELECT n.nid, AsText(ps.position) AS simple_geo_point
+            FROM {node} n
+            INNER JOIN {simple_geo_position} ps ON n.nid = ps.nid AND ps.type = 'node' ";
 
-  while ($node = db_fetch_object($res)) {
-    $point = explode(' ', simple_geo_clean_wkt('point', $node->position));
-    $nodes[] = array('lat' => (float)$point[0], 'lon' => (float)$point[1], 'count' => 1, 'nid' => (int)$node->nid);
+    // Define the WHERE part of the query. We first define some defaults.
+    $wheres = array(
+      'n.status <> 0',
+      "Contains(Envelope(GeomFromText('LineString(%s %s,%s %s)')), ps.position)",
+    );
+    if (!empty($layer->conf['node_type'])) {
+      $wheres[] = "n.type = '%s'";
+    }
 
+    // If max age is defined check so the node isn't older than the specified age.
+    if (!empty($layer->conf['max_age'])) {
+      $wheres[] = 'n.created >= ' . strtotime('-' . $layer->conf['max_age']);
+    }
+
+    // If update since is defined check so the node has been updated since the specified time.
+    if (!empty($layer->conf['updated_since'])) {
+      $wheres[] = 'n.changed >= ' . strtotime('-' . $layer->conf['updated_since']);
+    }
+
+    // Add the WHEREs to the query.
+    $sql .= ' WHERE ' . implode(' AND ', $wheres);
+
+    $sql .= " ORDER BY n.created";
+
+    $params = array($top_left['lat'], $top_left['long'], $bottom_right['lat'], $bottom_right['long']);
+    if (isset($layer->conf['node_type'])) {
+      $params[] = $layer->conf['node_type'];
+    }
+
+    $res = db_query(db_rewrite_sql($sql), $params);
+
+    while ($node = db_fetch_object($res)) {
+      $point = explode(' ', simple_geo_clean_wkt('point', $node->simple_geo_point));
+      $nodes[] = array('lat' => (float)$point[0], 'lon' => (float)$point[1], 'count' => 1, 'nid' => (int)$node->nid);
+    }
   }
 
   return $nodes;
-
 }
 
 function simplegeo_tileservice_lon_to_x($lon) {

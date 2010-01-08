@@ -20,57 +20,6 @@ define('SIMPLEGEOTILES_MAX_NODES', 20);
 define('SIMPLEGEOTILES_ALLOWED_BOUNDS', '58.0546319113729 7.239990234375,53.79416183737104 14.908447265625');
 
 /**
- * Returns the named layer or NULL if the layer
- * doesn't exist.
- *
- * @param string $name
- * @return array
- */
-function simplegeo_tileservice_get_layer($name) {
-  $layer = NULL;
-  $layers = simplegeo_tileservice_get_layers();
-  if (isset($layers[$name])) {
-    $layer = $layers[$name];
-  }
-  return $layer;
-}
-
-/**
- * Returns all the layers in the tile service.
- *
- * @return array
- */
-function simplegeo_tileservice_get_layers() {
-  static $layers;
-  $cache = !isset($layers);
-  $cache_key = 'simplegeo_tileservice:layers';
-
-  if (!$layers && ($cache = cache_get($cache_key)) && isset($cache->data)) {
-    $cache = FALSE;
-    $layers = $cache->data;
-  }
-
-  if (!$layers) {
-    $layers = module_invoke_all('simplegeo_tileservice_layers');
-    drupal_alter('simplegeo_tileservice_layers', $layers);
-
-    // Get rid of layers with invalid types
-    $types = simplegeo_tileservice_get_layer_types();
-    foreach ($layers as $name => $def) {
-      if (!isset($def['type']) || !isset($types[$def['type']])) {
-        unset($types[$name]);
-      }
-    }
-  }
-
-  if ($cache) {
-    cache_set($cache_key, $layers);
-  }
-
-  return $layers;
-}
-
-/**
  * Returns the named layer type or NULL if the layer type
  * doesn't exist.
  *
@@ -109,31 +58,189 @@ function simplegeo_tileservice_get_layer_types() {
 }
 
 /**
- * Implementation of hook_simplegeo_tileservice_layer_types().
- *
- * @return void
+ * Create a new layer with defaults appropriately set from schema.
  */
-function simplegeo_tileservice_simplegeo_tileservice_layers() {
+function simplegeo_tileservice_layer_new() {
+  ctools_include('export');
+  return ctools_export_new_object('simplegeo_tileservice_layer');
+}
+
+/**
+ * Load a single layer.
+ */
+function simplegeo_tileservice_layer_load($name) {
+  ctools_include('export');
+  $result = ctools_export_load_object('simplegeo_tileservice_layer', 'names', array($name));
+  if (isset($result[$name])) {
+    return $result[$name];
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Load all layers.
+ */
+function simplegeo_tileservice_layer_load_all() {
+  ctools_include('export');
+  return ctools_export_load_object('simplegeo_tileservice_layer');
+}
+
+/**
+ * Implements default_simplegeo_tileservice_layer_alter().
+ */
+function simplegeo_tileservice_default_simplegeo_tileservice_layer_alter(&$layers) {
+  // Get rid of layers with invalid layer types.
+  $types = simplegeo_tileservice_get_layer_types();
+  foreach ($layers as $key => $layer) {
+    if (!isset($layer->layer_type) || !isset($types[$layer->layer_type])) {
+      unset($layers[$key]);
+    }
+  }
+}
+
+/**
+ * Write a layer to the database.
+ */
+function simplegeo_tileservice_layer_save(&$layer) {
+  $update = (isset($layer->lid)) ? array('lid') : array();
+  drupal_write_record('simplegeo_tileservice_layer', $layer, $update);
+  return $layer;
+}
+
+/**
+ * Remove a layer.
+ */
+function simplegeo_tileservice_layer_delete($layer) {
+  db_query("DELETE FROM {simplegeo_tileservice_layer} WHERE name = '%s' AND lid = %d", $layer->name, $layer->lid);
+}
+
+/**
+ * Export a layer.
+ */
+function simplegeo_tileservice_layer_export($layer, $indent = '') {
+  ctools_include('export');
+  $output = ctools_export_object('simplegeo_tileservice_layer', $layer, $indent);
+  return $output;
+}
+
+/**
+ * Lists all available layers.
+ */
+function simplegeo_tileservice_layer_list() {
+  $return = array();
+  $layers = simplegeo_tileservice_layer_load_all();
+  foreach ($layers as $layer) {
+    $return[$layer->name] = $layer->name;
+  }
+  return $return;
+}
+
+/**
+ * Implementation of hook_simplegeo_tileservice_layer_types() on behalf of
+ * the node module.
+ */
+function node_simplegeo_tileservice_layer_types() {
   return array(
-    'nodes' => array(
-      'type' => 'node_sql',
-      'title' => t('Nodes'),
-      'active' => TRUE,
+    'node_sql' => array(
+      'title' => 'Node layer',
+      'load callback' => '_simplegeo_tileservice_get_nodes',
+      'settings callback' => '_simplegeo_tileservice_node_sql_settings',
+      'settings submit callback' => '_simplegeo_tileservice_node_sql_settings_submit',
     ),
   );
 }
 
-/**
- * Implementation of hook_simplegeo_tileservice_layers().
- *
- * @return void
- */
-function simplegeo_tileservice_simplegeo_tileservice_layer_types() {
-  return array(
-    'node_sql' => array(
-      'callback' => '_simplegeo_tileservice_get_nodes',
-    ),
+function _simplegeo_tileservice_node_sql_settings($layer) {
+  $form = array();
+
+  // Todo: Support multiple node types.
+  $form['node_type'] = array(
+    '#type' => 'select',
+    '#title' => t('Node type'),
+    '#options' => node_get_types('names'),
+    '#default_value' => $layer->conf['node_type'],
+    '#required' => TRUE,
   );
+  $form['simple'] = array(
+     '#type' => 'fieldset',
+     '#title' => t('Simple filter'),
+     '#collapsible' => TRUE,
+     '#collapsed' => empty($layer->conf['max_age']) && empty($layer->conf['updated_since']),
+  );
+  $form['simple']['max_age'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Max age'),
+    '#description' => t('Show only content that is younger than the specifed time. Examples: 1 day, 1 week.'),
+    '#default_value' => $layer->conf['max_age'],
+    '#element_validate' => array('_simplegeo_tileservice_node_validate_time_input'),
+  );
+  $form['simple']['updated_since'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Updated since'),
+    '#description' => t('Show only content that has been updated within the specified time. Examples: 1 day, 1 week.'),
+    '#default_value' => $layer->conf['updated_since'],
+    '#element_validate' => array('_simplegeo_tileservice_node_validate_time_input'),
+  );
+
+  if (module_exists('views')) {
+    $views = array('' => "Don't use a view");
+    $all_views = views_get_all_views();
+    foreach ($all_views as $view) {
+      // Only 'node' views that have fields will work for our purpose.
+      if ($view->base_table == 'node' && !empty($view->display['default']->display_options['fields']['position']) && !empty($view->display['default']->display_options['arguments']['bounding_box'])) {
+        if ($view->type == 'Default') {
+          $views[t('Default Views')][$view->name] = $view->name;
+        }
+        else {
+          $views[t('Existing Views')][$view->name] = $view->name;
+        }
+      }
+    }
+    $form['advanced'] = array(
+       '#type' => 'fieldset',
+       '#title' => t('Advanced filter, using Views'),
+       '#collapsible' => TRUE,
+       '#collapsed' => empty($layer->conf['view']),
+     );
+    if (count($views) > 1) {
+      $form['advanced']['view'] = array(
+        '#type' => 'select',
+        '#title' => t('View used to select the nodes'),
+        '#options' => $views,
+        '#default_value' => $layer->conf['view'],
+        '#description' => t('<p>Choose the "Views module" view that determines which nodes to display in the layer.<br />Note:</p>') .
+          t('<ul><li>Only views that have a Simple Geo position field and Simple Geo bounding box argument will work for this purpose.</li><li>This will discard the "Simple filter" settings above. Use the view\'s "filters" section instead.</li><li>The view should have a node type filter that maches the node type setting above.</li></ul>'),
+      );
+    }
+    else {
+      $form['advanced']['no_view_help'] = array(
+        '#value' => t('<p>The list of nodes that can be referenced can be based on a "Views module" view but no appropriate views were found. <br />Note:</p>') .
+          t('<ul><li>Only views that have a Simple Geo position field and Simple Geo bounding box argument will work for this purpose.</li><li>This will discard the "Simple filter" settings above. Use the view\'s "filters" section instead.</li><li>The view should have a node type filter that maches the node type setting above.</li></ul>'),
+      );
+    }
+  }
+
+  return $form;
+}
+
+function _simplegeo_tileservice_node_sql_settings_submit($values) {
+  return array(
+    'node_type' => $values['node_type'],
+    'max_age' => $values['max_age'],
+    'updated_since' => $values['updated_since'],
+    'view' => $values['view'],
+  );
+}
+
+/**
+ * Validate that a time entered as text is valid (convertable with strtotime()).
+ */
+function _simplegeo_tileservice_node_validate_time_input($element) {
+  if (!empty($element['#value']) && (strtotime($element['#value']) <= 0)) {
+    form_error($element, t('The entered time is not valid.'));
+  }
 }
 
 /**

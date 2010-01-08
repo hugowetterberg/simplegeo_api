@@ -56,8 +56,7 @@ function _simplegeo_tileservice_serve_tiles($zoom, $fromx, $fromy, $layers, $wid
     }
   }
 
-  print '{'. join(",", $json) .'}';
-  exit;
+  return array('{'. join(",", $json) .'}');
 }
 
 

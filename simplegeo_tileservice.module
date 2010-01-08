@@ -246,6 +246,7 @@ function simplegeo_tileservice_nodeapi(&$node, $op, $a3) {
   }
   if ($op == 'delete') {
     if (isset($node->simple_geo_position)) {
+      require_once('simplegeo_tileservice.inc');
       simplegeo_tileservice_clear_node_cache($node->type, $node->simple_geo_position);
     }
   }

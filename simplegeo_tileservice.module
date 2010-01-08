@@ -93,20 +93,15 @@ function simplegeo_tileservice_get_layer_type($name) {
  */
 function simplegeo_tileservice_get_layer_types() {
   static $types;
-  $cache = !isset($types);
   $cache_key = 'simplegeo_tileservice:types';
 
   if (!$types && ($cache = cache_get($cache_key)) && isset($cache->data)) {
-    $cache = FALSE;
     $types = $cache->data;
   }
 
   if (!$types) {
     $types = module_invoke_all('simplegeo_tileservice_layer_types');
     drupal_alter('simplegeo_tileservice_layer_types', $types);
-  }
-
-  if ($cache) {
     cache_set($cache_key, $types);
   }
 

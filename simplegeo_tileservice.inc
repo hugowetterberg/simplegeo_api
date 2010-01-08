@@ -8,7 +8,7 @@ define('SIMPLEGEOTILES_RADIUS', 85445659.4471); /* $offset / pi() */
 
 function _simplegeo_tileservice_index($z, $x, $y, $layers, $width=1, $height=1) {
   if (is_string($layers)) {
-    $layers = split('/,/', $layers);
+    $layers = explode(',', $layers);
   }
   return _simplegeo_tileservice_serve_tiles($z, $x, $y, $layers, $width, $height);
 }

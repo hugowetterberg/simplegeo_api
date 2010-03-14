@@ -1,0 +1,218 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Implements a map based from Dinby.
+ */
+
+/**
+ * Implementation of hook_block().
+ */
+
+function simplegeo_tileservice_map_block($op = 'list', $delta = 0) {
+  global $user;
+
+  if ($op == 'list') {
+    $block['map']['info'] = t('Map');
+    return $block;
+  }
+  else if ($op == 'view') {
+    if ($delta == 'map') {
+      $block['content'] = simplegeo_tileservice_map_map_block();
+    }
+  }
+  return $block;
+}
+
+function simplegeo_tileservice_map_default_services_endpoint() {
+  $endpoints = array();
+
+  $endpoint = new stdClass;
+  $endpoint->disabled = FALSE; /* Edit this to true to make a default endpoint disabled initially */
+  $endpoint->name = 'simplegeo_tileservice_map';
+  $endpoint->title = 'Tileservice Map';
+  $endpoint->server = 'rest_server';
+  $endpoint->path = 'tileservice/api';
+  $endpoint->authentication = array();
+  $endpoint->resources = array(
+    'simple-geo-layer' => array(
+      'alias' => 'tiles',
+      'operations' => array(
+        'index' => array(
+          'enabled' => 1,
+        ),
+      ),
+    ),
+    'simple-geo-node-info' => array(
+      'alias' => 'info',
+      'operations' => array(
+        'index' => array(
+          'enabled' => 1,
+        ),
+      ),
+    ),
+  );
+  $endpoints[] = $endpoint;
+
+  return $endpoints;
+}
+
+/**
+ * Implementation of hook_services_resources().
+ */
+function simplegeo_tileservice_map_services_resources() {
+  return array(
+    'simple-geo-node-info' => array(
+      'index' => array(
+        'callback' => 'simplegeo_tileservice_map_get_marker_info',
+        'args' => array(
+          array(
+            'name' => 'nids',
+            'type' => 'string',
+            'description' => 'The the comma-separated list of nids of the nodes to return.',
+            'default value' => '',
+            'source' => array('param' => 'nids'),
+          ),
+        ),
+        'access arguments' => array('access content'),
+      ),
+    ),
+  );
+}
+
+function simplegeo_tileservice_map_map_block() {
+  $position = variable_get('simple_geo_default_position', FALSE);
+  _simplegeo_tileservice_map_setup_map($position);
+
+  $output = '<div id="large-map" class="large"><h2 class="box">' . t('Map') . '</h2>';
+  $output .= '<div id="simplegeomap-help" class="modal"><div class="wrapper"><div class="warning no-js">'. t('You need javascript enabled in your browser to use the map.') .'</div><a class="close" href="#">'. t('Close box') .'</a><h3>'. t('Explore your map features') .'</h3>';
+  $output .= '<div class="desc"><p class="text">'. t('Use the toolbar above to show or hide markers on the map, change the size of the map or search for an address.') .'</p></div>';
+  $output .= '</div></div>';
+  $output .= '<div id="map"></div>';
+  $output .= '</div>';
+  return $output;
+}
+
+function _simplegeo_tileservice_map_setup_map($center = NULL, $zoom = NULL, $enabled_filters = NULL, $toolbar = NULL) {
+  $path = drupal_get_path('module', 'simplegeo_tileservice_map');
+  drupal_add_js($path .'/js/jquery.cookie.js', 'module');
+  drupal_add_js($path .'/js/simplegeo_tileservice_map.js', 'module');
+  // Add these JS files to the footer since they have to come after simplegeo_tileservice_map.js
+  // that loads the google maps api and because of aggregated CSS.
+  drupal_add_js($path .'/js/labeledmarker.js', 'module', 'footer');
+  drupal_add_js($path .'/js/ClusterMarker.js', 'footer');
+  drupal_add_css($path .'/simplegeo_tileservice_map.css');
+
+  $layers = simplegeo_tileservice_layer_load_all();
+  $filters = array();
+  $settings = array();
+  foreach ($layers as $layer => $layer_props) {
+    $filters[] = array($layer, $layer_props->title, $layer_props->checked);
+  }
+
+  if ($center) {
+    $settings['center'] = $center;
+  }
+  if ($zoom) {
+    $settings['zoom'] = $zoom;
+  }
+  if ($enabled_filters) {
+    $settings['enabledFilters'] = $enabled_filters;
+  }
+  if (isset($toolbar)) {
+    $settings['toolbar'] = $toolbar;
+  }
+
+  $settings['filters'] = $filters;
+  $settings['imagePath'] = url(drupal_get_path('module', 'simplegeo_tileservice_map') .'/img');
+  $settings['maxNodes'] = variable_get('simplegeo_tileservice_max_nodes', SIMPLEGEOTILES_MAX_NODES);
+  drupal_add_js(array('simpleGeoTileserviceMap' => $settings), 'setting');
+}
+
+function simplegeo_tileservice_map_simple_geo_cluster_markers() {
+  $sets = array(
+    'black' => array(),
+    'orange' => array(),
+  );
+
+  $url = url(drupal_get_path('module', 'simplegeo_tileservice_map') . '/img');
+
+  $tresholds = array(
+    array(
+      'treshold' => 0,
+      'size' => 21,
+      'anchor' => 10,
+      'labelOffset' => array(-9, -5),
+    ),
+    array(
+      'treshold' => 10,
+      'size' => 39,
+      'anchor' => 19,
+      'labelOffset' => array(-19, -7),
+    ),
+    array(
+      'treshold' => 50,
+      'size' => 49,
+      'anchor' => 24,
+      'labelOffset' => array(-24, -10),
+    ),
+    array(
+      'treshold' => 100,
+      'size' => 59,
+      'anchor' => 24,
+      'labelOffset' => array(-24, -10),
+    ),
+  );
+
+  foreach ($sets as $key => &$data) {
+    foreach ($tresholds as $treshold) {
+      $treshold['marker'] = $url . '/' . $key . '_' . $treshold['size'] . '.png';
+      $data[] = $treshold;
+    }
+  }
+
+  return $sets;
+}
+
+function simplegeo_tileservice_map_get_marker_info($nids) {
+  $nids = explode(',', $nids);
+  $output = '';
+  $max_nodes = variable_get('simplegeo_tileservice_max_nodes', SIMPLEGEOTILES_MAX_NODES);
+  $i = 0;
+
+  if (count($nids)) {
+    foreach ($nids as $nid) {
+      $nid = $nids[$i];
+      if (isset($nid) && is_numeric($nid)) {
+        $node = node_load($nid);
+        // Send a string with the teaser which can be used by the teaser template.
+        $teaser = 'map_info_window';
+        $page = FALSE;
+        node_build_content($node, $teaser, $page);
+        if (isset($node->content['simple_geo'])) {
+          unset($node->content['simple_geo']);
+        }
+        $content = drupal_render($node->content);
+        if ($teaser) {
+          $node->teaser = $content;
+          unset($node->body);
+        }
+        else {
+          $node->body = $content;
+          unset($node->teaser);
+        }
+
+        node_invoke_nodeapi($node, 'alter', $teaser, $page);
+        $output .= theme('node', $node, $teaser, $page);
+      }
+      $i++;
+      // Break out if we reached the max nodes, protects from hand-crafted urls.
+      if ($i >= $max_nodes) {
+        break;
+      }
+    }
+    print '<div class="nodes">'. $output .'</div>';
+    exit;
+  }
+}

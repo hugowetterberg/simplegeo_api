@@ -288,7 +288,7 @@ function simplegeo_tileservice_services_resources() {
             'type' => 'int',
             'description' => 'Supply a width (number of tiles) if more than a single tile should be returned.',
             'default value' => 1,
-            'source' => array('param' => 'layers'),
+            'source' => array('param' => 'width'),
           ),
           array(
             'name' => 'height',
@@ -296,7 +296,7 @@ function simplegeo_tileservice_services_resources() {
             'type' => 'int',
             'description' => 'Supply a height (number of tiles) if more than a single tile should be returned.',
             'default value' => 1,
-            'source' => array('param' => 'layers'),
+            'source' => array('param' => 'height'),
           ),
         ),
         'access arguments' => array('access content'),

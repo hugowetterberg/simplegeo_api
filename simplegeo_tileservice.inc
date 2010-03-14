@@ -46,12 +46,12 @@ function _simplegeo_tileservice_serve_tiles($zoom, $fromx, $fromy, $layers, $wid
           }
         }
       }
-
-      $json[] =  $layer . ':[' . join(",", $tiles_result) . ']';
+      foreach ($tiles_result as $r) {
+        $layer_result[$layer][] = json_decode($r);
+      }
     }
   }
-
-  return array('{'. join(",", $json) .'}');
+  return $layer_result;
 }
 
 

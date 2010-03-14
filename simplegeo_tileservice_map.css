@@ -1,0 +1,30 @@
+div.marker-label {
+	display: block;
+}
+
+div.marker-label {
+	text-align: center;
+	color: white;
+	font-weight: bold;
+	line-height: 1;
+}
+div.marker-label-21 {
+  font-size: 11px;
+  width: 21px;
+}
+div.marker-label-29 {
+  font-size: 12px;
+  width: 29px;
+}
+div.marker-label-39 {
+  font-size: 14px;
+  width: 39px;
+}
+div.marker-label-49 {
+  font-size: 18px;
+  width: 49px;
+}
+div.marker-label-59 {
+  font-size: 18px;
+  width: 59px;
+}

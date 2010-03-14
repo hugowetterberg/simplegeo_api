@@ -1,0 +1,8 @@
+; $Id$
+name = Tileservice Map
+core = 6.x
+description = Extends the simple geo map with support for layers
+package = Geo
+
+dependencies[] = simplegeo_tileservice
+dependencies[] = rest_server

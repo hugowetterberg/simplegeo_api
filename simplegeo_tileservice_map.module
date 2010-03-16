@@ -86,9 +86,6 @@ function simplegeo_tileservice_map_map_block() {
   _simplegeo_tileservice_map_setup_map($position);
 
   $output = '<div id="large-map" class="large"><h2 class="box">' . t('Map') . '</h2>';
-  $output .= '<div id="simplegeomap-help" class="modal"><div class="wrapper"><div class="warning no-js">'. t('You need javascript enabled in your browser to use the map.') .'</div><a class="close" href="#">'. t('Close box') .'</a><h3>'. t('Explore your map features') .'</h3>';
-  $output .= '<div class="desc"><p class="text">'. t('Use the toolbar above to show or hide markers on the map, change the size of the map or search for an address.') .'</p></div>';
-  $output .= '</div></div>';
   $output .= '<div id="map"></div>';
   $output .= '</div>';
   return $output;
@@ -130,37 +127,57 @@ function _simplegeo_tileservice_map_setup_map($center = NULL, $zoom = NULL, $ena
   drupal_add_js(array('simpleGeoTileserviceMap' => $settings), 'setting');
 }
 
-function simplegeo_tileservice_map_simple_geo_cluster_markers() {
+function simplegeo_tileservice_map_cluster_markers() {
+  $sets = array();
+  foreach (module_implements('simplegeo_cluster_markers') as $module) {
+    $res = call_user_func("{$module}_simplegeo_cluster_markers");
+    if (is_array($res)) {
+      $sets = $res + $sets;
+    }
+  }
+  return $sets;
+}
+
+function simplegeo_tileservice_map_simplegeo_cluster_markers() {
   $sets = array(
-    'black' => array(),
-    'orange' => array(),
+    'black' => array(
+      'title' => t('Black'),
+    ),
+    'orange' => array(
+      'title' => t('Orange'),
+    ),
   );
 
   $url = url(drupal_get_path('module', 'simplegeo_tileservice_map') . '/img');
 
   $tresholds = array(
     array(
-      'treshold' => 0,
-      'size' => 21,
-      'anchor' => 10,
+      'treshold' => 1,
+      'size' => array(15, 21),
+      'anchor' => array(8, 21),
+    ),
+    array(
+      'treshold' => 2,
+      'size' => array(21, 21),
+      'anchor' => array(10, 10),
       'labelOffset' => array(-9, -5),
     ),
     array(
       'treshold' => 10,
-      'size' => 39,
-      'anchor' => 19,
+      'size' => array(39, 39),
+      'anchor' => array(19, 19),
       'labelOffset' => array(-19, -7),
     ),
     array(
       'treshold' => 50,
-      'size' => 49,
-      'anchor' => 24,
+      'size' => array(49, 49),
+      'anchor' => array(24, 24),
       'labelOffset' => array(-24, -10),
     ),
     array(
       'treshold' => 100,
-      'size' => 59,
-      'anchor' => 24,
+      'size' => array(59, 59),
+      'anchor' => array(24, 24),
       'labelOffset' => array(-24, -10),
     ),
   );
@@ -168,7 +185,7 @@ function simplegeo_tileservice_map_simple_geo_cluster_markers() {
   foreach ($sets as $key => &$data) {
     foreach ($tresholds as $treshold) {
       $treshold['marker'] = $url . '/' . $key . '_' . $treshold['size'] . '.png';
-      $data[] = $treshold;
+      $data['markers'][] = $treshold;
     }
   }
 

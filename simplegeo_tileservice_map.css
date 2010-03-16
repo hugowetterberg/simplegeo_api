@@ -28,3 +28,86 @@ div.marker-label-59 {
   font-size: 18px;
   width: 59px;
 }
+
+#simplegeomap-toolbar {
+  margin: 0;
+  padding: 10px;
+  display: block;
+  height: 1em;
+}
+
+#simplegeomap-toolbar li {
+  display: block;
+  float: left;
+}
+
+#simplegeomap-help {
+  background: #FFFFFF;
+  border: 1px solid black;
+  padding: 20px;
+  position: absolute;
+  width: 500px;
+  height: 300px;
+}
+
+#simplegeomap-info-window {
+  background: #FFFFFF;
+  border: 3px solid #414343;
+  position: absolute;
+  width: 300px;
+  z-index: 9999;
+  padding-top: 18px;
+}
+
+#simplegeomap-info-window h2 {
+  margin: 0;
+}
+
+#simplegeomap-info-window .close {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#simplegeomap-info-window .nodes {
+  padding: 5px;
+}
+
+/* fullscreen mode */
+#simplegeomap-toolbar li.toggle-fullscreen a:link, #simplegeomap-toolbar li.toggle-fullscreen a:visited {
+  background-position: 0 -177px;
+}
+html.fullscreen #simplegeomap-toolbar li.toggle-fullscreen a:link, html.fullscreen #simplegeomap-toolbar li.toggle-fullscreen a:visited {
+  background-position: 0 -236px;
+}
+html.fullscreen, html.fullscreen body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+html.fullscreen #large-map {
+  height: 100%;
+  width: 100%;
+  position: relative;
+  z-index: 50;
+}
+html.fullscreen #large-map.large #map, html.fullscreen #large-map.small #map {
+  height: 100%;
+  width: auto;
+}
+html.fullscreen #large-map h2.box {
+  width: 100%;
+  position:absolute;
+  z-index: 55;
+}
+html.fullscreen #extlargemapcontrol {
+  top: 44px !important;
+}
+html.fullscreen .address-search {
+  top: 3px !important;
+}
+html.fullscreen .toggle-size {
+  display: none;
+}

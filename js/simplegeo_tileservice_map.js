@@ -13,32 +13,32 @@ var simplegeoMapNewMarker;
 
     function getIconSize(clusterCount, type) {
       if (clusterCount <= 9) {
-        return {iconSize: 21, iconAnchor: 10, labelOffset: {left: -9, top: -5}};
+        return {iconSize: [21,21], iconAnchor: [10,10], labelOffset: {left: -9, top: -5}};
       }
       else if (clusterCount <= 49) {
-        return {iconSize: 39, iconAnchor: 19, labelOffset: {left: -19, top: -7}};
+        return {iconSize: [39,30], iconAnchor: [19,19], labelOffset: {left: -19, top: -7}};
       }
       else if (clusterCount <= 99) {
-        return {iconSize: 49, iconAnchor: 24, labelOffset: {left: -24, top: -10}};
+        return {iconSize: [49,49], iconAnchor: [24,24], labelOffset: {left: -24, top: -10}};
       }
       else {
-        return {iconSize: 59, iconAnchor: 29, labelOffset: {left: -29, top: -10}};
+        return {iconSize: [59,59], iconAnchor: [29,29], labelOffset: {left: -29, top: -10}};
       }
     }
 
     function getClusterMarker(clusterCount, type) {
       icon = new GIcon();
       iconInfo = getIconSize(clusterCount, type);
-      icon.image = Drupal.settings.simpleGeoTileserviceMap.imagePath + '/orange_' + iconInfo.iconSize + '.png';
-      icon.iconSize = new GSize(iconInfo.iconSize, iconInfo.iconSize);
-      icon.iconAnchor = new GPoint(iconInfo.iconAnchor, iconInfo.iconAnchor);
+      icon.image = Drupal.settings.simpleGeoTileserviceMap.imagePath + '/black_' + iconInfo.iconSize[0] + '.png';
+      icon.iconSize = new GSize(iconInfo.iconSize[0], iconInfo.iconSize[1]);
+      icon.iconAnchor = new GPoint(iconInfo.iconAnchor[0], iconInfo.iconAnchor[1]);
 
       var opts = {
         "icon": icon,
         "clickable": true,
         "labelText": clusterCount.toString(),
         "labelOffset": new GSize(iconInfo.labelOffset.left, iconInfo.labelOffset.top),
-        "labelClass": 'marker-label marker-label-' + iconInfo.iconSize,
+        "labelClass": 'marker-label marker-label-' + iconInfo.iconSize[0],
         "title": title
       };
       return new LabeledMarker(markerLocation, opts);
@@ -46,9 +46,9 @@ var simplegeoMapNewMarker;
 
     function getSingleMarker(type) {
       icon =  new GIcon();
-      icon.iconSize = new GSize(22, 31);
-      icon.iconAnchor = new GPoint(11, 31);
-      icon.image =  Drupal.settings.simpleGeoTileserviceMap.imagePath + '/orange_21.png';
+      icon.iconSize = new GSize(15, 21);
+      icon.iconAnchor = new GPoint(12, 21);
+      icon.image =  Drupal.settings.simpleGeoTileserviceMap.imagePath + '/black_15.png';
       return new GMarker(markerLocation, icon);
     }
 

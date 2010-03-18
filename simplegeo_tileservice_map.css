@@ -89,6 +89,10 @@ div.marker-label-59 {
   padding-right: 0.5em;
 }
 
+#simplegeomap-tag-filters li a.active {
+  font-weight: bold;
+}
+
 /* fullscreen mode */
 #simplegeomap-toolbar li.toggle-fullscreen a:link, #simplegeomap-toolbar li.toggle-fullscreen a:visited {
   background-position: 0 -177px;

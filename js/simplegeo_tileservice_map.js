@@ -218,17 +218,17 @@ var simplegeoMapNewMarker;
                 item = $('<li></li>'),
                 tag = $('<a></a>').text(term.name).appendTo(item).click(function() {
                 if (typeof selectedTids[tid] !== 'undefined') {
-                  $(this).css('font-weight', 'normal');
+                  $(tag).addClass('active');
                   delete selectedTids[tid];
                 }
                 else {
-                  $(this).css('font-weight', 'bold');
+                  $(tag).removeClass('active');
                   selectedTids[tid] = term;
                 }
                 updateMarkers(['search'], true);
               });
               if (typeof selectedTids[tid] !== 'undefined') {
-                tag.css('font-weight', 'bold');
+                $(tag).addClass('active');
               }
               item.appendTo(tagFilterBox);
             },

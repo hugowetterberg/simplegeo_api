@@ -153,7 +153,7 @@ var simplegeoMapNewMarker;
 
   function updateMarkers(types, forceRefresh) {
     // No filters
-    if (types.length < 1) {
+    if (types.length < 1 && !search) {
       removeMarkers();
       return;
     }

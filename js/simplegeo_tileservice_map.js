@@ -6,7 +6,15 @@ var simplegeoMapNewMarker;
   var map, mapElement, mapWrapper, cluster,
   oldCenter = false, padding = 256, ajax, infoWindow, filterInputs, filters,
   filterCookie, enabledFilters = [], loader, mapState = 1, smallZoomControl,
-  largeZoomControl, helpBox, maxZoom = 17, minZoom = 7;
+  largeZoomControl, helpBox, maxZoom = 17, minZoom = 7, search = true,
+  tids = [], selectedTids = {}, tagFilterBox,
+  loaderShow = function() {
+    loader.css({
+      top: $(mapElement).outerHeight() / 2 - loader.outerHeight() / 2,
+      left: $(mapElement).outerWidth() / 2 - loader.outerWidth() / 2
+    });
+    loader.show();
+  };
 
   function newMarker(type, markerLocation, clusterCount, clusterBounds, markerId, title, map) {
     var marker, icon, iconInfo;
@@ -29,7 +37,7 @@ var simplegeoMapNewMarker;
     function getClusterMarker(clusterCount, type) {
       icon = new GIcon();
       iconInfo = getIconSize(clusterCount, type);
-      icon.image = Drupal.settings.simpleGeoTileserviceMap.imagePath + '/black_' + iconInfo.iconSize[0] + '.png';
+      icon.image = Drupal.settings.simpleGeoTileserviceMap.imagePath + '/orange_' + iconInfo.iconSize[0] + '.png';
       icon.iconSize = new GSize(iconInfo.iconSize[0], iconInfo.iconSize[1]);
       icon.iconAnchor = new GPoint(iconInfo.iconAnchor[0], iconInfo.iconAnchor[1]);
 
@@ -48,7 +56,7 @@ var simplegeoMapNewMarker;
       icon =  new GIcon();
       icon.iconSize = new GSize(15, 21);
       icon.iconAnchor = new GPoint(12, 21);
-      icon.image =  Drupal.settings.simpleGeoTileserviceMap.imagePath + '/black_15.png';
+      icon.image =  Drupal.settings.simpleGeoTileserviceMap.imagePath + '/orange_15.png';
       return new GMarker(markerLocation, icon);
     }
 
@@ -155,7 +163,7 @@ var simplegeoMapNewMarker;
     center = map.getCenter(),
     proj = map.getCurrentMapType().getProjection(),
     pixel = proj.fromLatLngToPixel(center, zoomLevel),
-    tile, topLeftPixel, topLeftTile, bottomRightPixel, bottomRightTile, url, markersArray = [];
+    tile, topLeftPixel, topLeftTile, bottomRightPixel, bottomRightTile, url, data, tid, markersArray = [];
 
 
     // Only fetch new markers if the map is moved outside the padding or
@@ -169,48 +177,96 @@ var simplegeoMapNewMarker;
       bottomRightPixel = {x : pixel.x + (size.width/2), y: pixel.y + (size.height/2)};
       bottomRightTile = new GPoint(Math.floor(bottomRightPixel.x/256), Math.floor(bottomRightPixel.y/256));
 
+      data = {
+        z: zoomLevel,
+        x: (topLeftTile.x - 1),
+        y: (topLeftTile.y - 1),
+        width: bottomRightTile.x - topLeftTile.x + 2,
+        height: bottomRightTile.y - topLeftTile.y + 2
+      };
       // zoom/from/to/layers
-      url = Drupal.settings.basePath + 'tileservice/api/tiles';
+      if (!search) {
+        url = Drupal.settings.basePath + 'tileservice/api/tiles';
+        data.layers = types.join(',');
+      }
+      else {
+        data.z -= 1;
+        data.facets = 'tid';
+        data.query = '';
+        for (tid in selectedTids) {
+          data.query += ' tid:' + tid;
+        }
+        url = Drupal.settings.basePath + 'geo/api/search';
+      }
 
       // Get markers
-
       ajax = $.ajax({
         url: url,
-        data: {
-          z: zoomLevel,
-          x: (topLeftTile.x - 1),
-          y: (topLeftTile.y - 1),
-          layers: types.join(','),
-          width: bottomRightTile.x - topLeftTile.x + 2,
-          height: bottomRightTile.y - topLeftTile.y + 2
-        },
+        data: data,
         dataType: 'json',
         beforeSend: function () {
           // Abort previous requests;
           if (typeof ajax !== 'undefined') {
             ajax.abort();
           }
-          loader.show();
+          loaderShow();
         },
         success: function (json) {
-          $.each(types, function (j, type) {
-            var i, u, clusterBounds;
-            if (typeof json[type] !== 'undefined') {
-              for (i=0; i<json[type].length; i++) {
-                for (u=0; u<json[type][i].length; u++) {
-                   clusterBounds = new GLatLngBounds();
-                  if (json[type][i][u].NW) {
-                    clusterBounds.extend(new GLatLng(json[type][i][u].NW[0], json[type][i][u].NW[1]));
-                    clusterBounds.extend(new GLatLng(json[type][i][u].SE[0], json[type][i][u].SE[1]));
+          var tid,
+            tidFilter = function (tid, term) {
+              var
+                item = $('<li></li>'),
+                tag = $('<a></a>').text(term.name).appendTo(item).click(function() {
+                if (typeof selectedTids[tid] !== 'undefined') {
+                  $(this).css('font-weight', 'normal');
+                  delete selectedTids[tid];
+                }
+                else {
+                  $(this).css('font-weight', 'bold');
+                  selectedTids[tid] = term;
+                }
+                updateMarkers(['search'], true);
+              });
+              if (typeof selectedTids[tid] !== 'undefined') {
+                tag.css('font-weight', 'bold');
+              }
+              item.appendTo(tagFilterBox);
+            },
+            pushMarker = function (type, m) {
+            var clusterBounds = new GLatLngBounds();
+            if (m.NW) {
+              clusterBounds.extend(new GLatLng(m.NW[0], m.NW[1]));
+              clusterBounds.extend(new GLatLng(m.SE[0], m.SE[1]));
+            }
+            else {
+              clusterBounds.extend(new GLatLng(m.lat, m.lon));
+            };
+            markersArray.push(newMarker(type, new GLatLng(m.lat, m.lon), m.count, clusterBounds, m.nid, Drupal.t("Show items"), map));
+          };
+          if (search) {
+            if (typeof json['items'] !== 'undefined') {
+              tids = json.facets.tid;
+              $(tagFilterBox).empty();
+              for (tid in tids) {
+                tidFilter(tid, tids[tid]);
+              }
+              $.each(json.items, function (i, marker) {
+                pushMarker('item', marker);
+              });
+            }
+          }
+          else {
+            $.each(types, function (j, type) {
+              var i, u;
+              if (typeof json[type] !== 'undefined') {
+                for (i=0; i<json[type].length; i++) {
+                  for (u=0; u<json[type][i].length; u++) {
+                    pushMarker(type, json[type][i][u]);
                   }
-                  else {
-                    clusterBounds.extend(new GLatLng(json[type][i][u].lat, json[type][i][u].lon));
-                  };
-                  markersArray.push(newMarker(type, new GLatLng(json[type][i][u].lat, json[type][i][u].lon), json[type][i][u].count, clusterBounds, json[type][i][u].nid, Drupal.t("Show items"), map));
                 }
               }
-            }
-          });
+            });
+          }
 
           // Save the current center
           oldCenter = pixel;
@@ -268,16 +324,16 @@ var simplegeoMapNewMarker;
   }
 
   function addToolbar() {
-    var toolbar, filterToggle, filterHTML, filterBox, sizeToggle,
-    fullscreen, fullscreenToggle, searchAddress;
-
-    function closeFilterBox(event) {
+    var toolbar, filterToggle, filterHTML, filterBox,
+    tagFilterToggle, sizeToggle,
+    fullscreen, fullscreenToggle, searchAddress,
+    closeFilterBox = function(event) {
       var target = $(event.target);
       if (target.is("a.close") || !target.parents(filterBox).is('#simplegeomap-filters')) {
         filterBox.hide();
         $(document).unbind('click', closeFilterBox);
       }
-    }
+    };
 
     toolbar = $('<ul id="simplegeomap-toolbar"></ul>').insertBefore(mapElement);
 
@@ -323,6 +379,22 @@ var simplegeoMapNewMarker;
         // Save filters in cookie.
         $.cookie('simplegeoMapFilters', filters, {expires: 365});
       });
+    });
+
+    // Add tag filter control
+    tagFilterToggle = $('<li class="toggle-tag-filter"><a href="#">' + Drupal.t('Filter') + '</a></li>').appendTo(toolbar);
+    tagFilterBox = $('<ul id="simplegeomap-tag-filters" class="modal"><div class="wrapper"></div></ul>').insertBefore(mapElement).hide();
+
+    $("a", tagFilterToggle).click(function (event) {
+      closeHelpBox();
+      if (filterBox.is(':hidden')) {
+        tagFilterBox.show();
+        return false;
+      }
+      else {
+        tagFilterBox.hide();
+        return false;
+      }
     });
 
     //Add size control

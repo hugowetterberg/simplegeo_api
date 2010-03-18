@@ -41,6 +41,16 @@ div.marker-label-59 {
   float: left;
 }
 
+#simplegeomap-loader {
+  z-index: 1000;
+  position: absolute;
+  background: url(img/progress-black.gif) top left no-repeat;
+  width: 56px;
+  height: 21px;
+  text-indent: -999px;
+  overflow: hidden;
+}
+
 #simplegeomap-help {
   background: #FFFFFF;
   border: 1px solid black;
@@ -72,6 +82,11 @@ div.marker-label-59 {
 
 #simplegeomap-info-window .nodes {
   padding: 5px;
+}
+
+#simplegeomap-tag-filters li {
+  display: inline;
+  padding-right: 0.5em;
 }
 
 /* fullscreen mode */

@@ -1,0 +1,102 @@
+<?php
+
+define('SIMPLEGEO_API_MAX_NODE_INFO', 20);
+define('SIMPLEGEOTILES_OFFSET', 268435456);
+define('SIMPLEGEOTILES_RADIUS', 85445659.4471); /* $offset / pi() */
+
+function simplegeo_api_default_services_endpoint() {
+  $endpoints = array();
+
+  $endpoint = new stdClass;
+  $endpoint->disabled = FALSE; /* Edit this to true to make a default endpoint disabled initially */
+  $endpoint->name = 'simplegeo_api';
+  $endpoint->title = 'Simple Geo API';
+  $endpoint->server = 'rest_server';
+  $endpoint->path = 'geo/api';
+  $endpoint->authentication = array();
+  $endpoint->resources = array(
+    'simple-geo-node-info' => array(
+      'alias' => 'node-info',
+      'operations' => array(
+        'index' => array(
+          'enabled' => 1,
+        ),
+      ),
+    ),
+  );
+  drupal_alter('simplegeo_api_resources', $endpoint->resources);
+  $endpoints[] = $endpoint;
+
+  return $endpoints;
+}
+
+/**
+ * Implementation of hook_services_resources().
+ */
+function simplegeo_api_services_resources() {
+  return array(
+    'simple-geo-node-info' => array(
+      'index' => array(
+        'callback' => 'simplegeo_api_get_node_info',
+        'args' => array(
+          array(
+            'name' => 'nids',
+            'type' => 'string',
+            'description' => 'The the comma-separated list of nids of the nodes to return.',
+            'default value' => '',
+            'source' => array('param' => 'nids'),
+          ),
+        ),
+        'access arguments' => array('access content'),
+      ),
+    ),
+  );
+}
+
+/**
+ * Renders node teasers for a collection of nodes.
+ *
+ * @param string $nids 
+ * @return void
+ */
+function simplegeo_api_get_node_info($nids) {
+  $nids = explode(',', $nids);
+  $output = '';
+  $max_nodes = variable_get('simplegeo_api_max_node_info', SIMPLEGEO_API_MAX_NODE_INFO);
+  $i = 0;
+
+  if (count($nids)) {
+    foreach ($nids as $nid) {
+      $nid = $nids[$i];
+      if (isset($nid) && is_numeric($nid)) {
+        $node = node_load($nid);
+        // Send a string with the teaser which can be used by the teaser template.
+        $teaser = 'simplegeo_api_node_info';
+        $page = FALSE;
+        node_build_content($node, $teaser, $page);
+        if (isset($node->content['simple_geo'])) {
+          unset($node->content['simple_geo']);
+        }
+        $content = drupal_render($node->content);
+        if ($teaser) {
+          $node->teaser = $content;
+          unset($node->body);
+        }
+        else {
+          $node->body = $content;
+          unset($node->teaser);
+        }
+
+        node_invoke_nodeapi($node, 'alter', $teaser, $page);
+        $output .= '<div class="simplegeoapi-node-info">' . theme('node', $node, $teaser, $page) . '</div>';
+      }
+      $i++;
+      // Break out if we reached the max nodes, protects from hand-crafted urls.
+      if ($i >= $max_nodes) {
+        break;
+      }
+    }
+    print '<div class="nodes">' . $output . '</div>';
+    exit;
+  }
+}

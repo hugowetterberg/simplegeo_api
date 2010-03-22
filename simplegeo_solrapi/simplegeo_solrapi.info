@@ -1,0 +1,8 @@
+; $Id$
+name = Simple Geo Search API
+core = 6.x
+description = Provides a Solr search API for Simple Geo
+package = Geo
+
+dependencies[] = simplegeo_api
+dependencies[] = solr_resource

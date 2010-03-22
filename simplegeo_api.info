@@ -1,0 +1,6 @@
+name = Simple Geo API
+core = 6.x
+description = Provides a Simple Geo API.
+package = Geo
+
+dependencies[] = simple_geo

@@ -16,8 +16,26 @@
 // they are defined and not in the include file.
 define('SIMPLEGEOTILES_MAX_ZOOM', 17);
 define('SIMPLEGEOTILES_MIN_ZOOM', 7);
-define('SIMPLEGEOTILES_MAX_NODES', 20);
 define('SIMPLEGEOTILES_ALLOWED_BOUNDS', '58.0546319113729 7.239990234375,53.79416183737104 14.908447265625');
+
+/**
+ * Implementation of hook_simplegeo_map_source().
+ */
+function simplegeo_tileservice_simplegeo_map_source() {
+  $sources = array();
+
+  $sources[] = array(
+    'name' => 'simplegeo_tileservice',
+    'title' => t('Simple Geo layers'),
+    'js' => array('jquery.cookie.js', 'simplegeo_tileservice.js'),
+  );
+
+  return $sources;
+}
+
+function simplegeo_tileservice_simplegeo_map_settings_alter($settings) {
+  $settings['tileservice']['layers'] = simplegeo_tileservice_layer_list();
+}
 
 /**
  * Returns the named layer type or NULL if the layer type
@@ -241,6 +259,23 @@ function _simplegeo_tileservice_node_validate_time_input($element) {
   if (!empty($element['#value']) && (strtotime($element['#value']) <= 0)) {
     form_error($element, t('The entered time is not valid.'));
   }
+}
+
+/**
+ * Add the layer resource to the Simple Geo API.
+ *
+ * @param array $resources
+ * @return void
+ */
+function simplegeo_tileservice_simplegeo_api_resources_alter(&$resources) {
+  $resources['simple-geo-layer'] = array(
+    'alias' => 'layers',
+    'operations' => array(
+      'index' => array(
+        'enabled' => 1,
+      ),
+    ),
+  );
 }
 
 /**

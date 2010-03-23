@@ -27,7 +27,7 @@ function simplegeo_tileservice_simplegeo_map_source() {
   $sources[] = array(
     'name' => 'simplegeo_tileservice',
     'title' => t('Simple Geo layers'),
-    'js' => array('jquery.cookie.js', 'simplegeo_tileservice.js'),
+    'js' => array('simplegeo_tileservice.js'),
   );
 
   return $sources;

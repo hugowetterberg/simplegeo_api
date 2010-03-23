@@ -116,7 +116,7 @@ function simplegeo_solrapi_services_resources() {
  */
 function simplegeo_solrapi_apachesolr_update_index(&$doc, $node) {
   if (!empty($node->simple_geo_position)) {
-    module_load_include('inc', 'simplegeo_tileservice');
+    module_load_include('inc', 'simplegeo_api');
     // Calculate the tiles from zoom level 1 to 16.
     $coords = simple_geo_coordinates_to_array($node->simple_geo_position);
     $t = GMapTile::getTileCoordinate($coords[0], $coords[1], 0);

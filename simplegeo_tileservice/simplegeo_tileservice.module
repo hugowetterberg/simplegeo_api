@@ -150,7 +150,7 @@ function simplegeo_tileservice_layer_list() {
   $return = array();
   $layers = simplegeo_tileservice_layer_load_all();
   foreach ($layers as $layer) {
-    $return[$layer->name] = $layer->name;
+    $return[$layer->name] = $layer->title;
   }
   return $return;
 }

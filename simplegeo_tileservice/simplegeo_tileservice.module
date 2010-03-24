@@ -19,18 +19,18 @@ define('SIMPLEGEOTILES_MIN_ZOOM', 7);
 define('SIMPLEGEOTILES_ALLOWED_BOUNDS', '58.0546319113729 7.239990234375,53.79416183737104 14.908447265625');
 
 /**
- * Implementation of hook_simplegeo_map_source().
+ * Implementation of hook_simplegeo_map_plugin().
  */
-function simplegeo_tileservice_simplegeo_map_source() {
-  $sources = array();
+function simplegeo_tileservice_simplegeo_map_plugin() {
+  $plugins = array();
 
-  $sources[] = array(
+  $plugins[] = array(
     'name' => 'simplegeo_tileservice',
     'title' => t('Simple Geo layers'),
     'js' => array('simplegeo_tileservice.js'),
   );
 
-  return $sources;
+  return $plugins;
 }
 
 function simplegeo_tileservice_simplegeo_map_settings_alter($settings) {

@@ -12,18 +12,18 @@ function simplegeo_solrapi_autoload_info() {
 }
 
 /**
- * Implementation of hook_simplegeo_map_source().
+ * Implementation of hook_simplegeo_map_plugin().
  */
-function simplegeo_solrapi_simplegeo_map_source() {
-  $sources = array();
+function simplegeo_solrapi_simplegeo_map_plugin() {
+  $plugins = array();
 
-  $sources[] = array(
+  $plugins[] = array(
     'name' => 'simplegeo_solrapi',
     'title' => t('Solr tag filter'),
     'js' => array('simplegeo_solrapi.js'),
   );
 
-  return $sources;
+  return $plugins;
 }
 
 /**

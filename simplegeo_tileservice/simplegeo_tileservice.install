@@ -112,7 +112,7 @@ function simplegeo_tileservice_update_6001() {
   $ret = array();
   $schema = simplegeo_tileservice_schema();
   $table = $schema['simplegeo_tileservice_layer'];
-  db_create_table(&$ret, 'simplegeo_tileservice_layer', $table);
+  db_create_table($ret, 'simplegeo_tileservice_layer', $table);
   return $ret;
 }
 

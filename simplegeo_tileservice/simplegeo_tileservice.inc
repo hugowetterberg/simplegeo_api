@@ -65,7 +65,7 @@ function simplegeo_tileservice_read_cache($x, $y, $zoom, $lang, $layer) {
 
 function simplegeo_tileservice_write_cache($x, $y, $zoom, $lang, $layer, $data) {
   $cache_row = db_result(db_query("SELECT COUNT(x) FROM {simplegeo_tileservice_tilecache}
-    WHERE x = %d AND y = %d AND zoom = %d AND layer = '%s'", $x, $y, $zoom, $lang, $layer));
+    WHERE x = %d AND y = %d AND zoom = %d AND language='%s' AND layer = '%s'", $x, $y, $zoom, $lang, $layer));
 
   if ($cache_row) {
     $sql =  "UPDATE {simplegeo_tileservice_tilecache}

@@ -4,3 +4,5 @@ description = Provides a Simple Geo API.
 package = Geo
 
 dependencies[] = simple_geo
+dependencies[] = services
+dependencies[] = rest_server

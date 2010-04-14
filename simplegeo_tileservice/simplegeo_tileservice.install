@@ -43,12 +43,17 @@ function simplegeo_tileservice_schema() {
         'length' => 32,
         'not null' => TRUE,
       ),
+      'language' => array(
+        'type' => 'char',
+        'length' => 2,
+        'not null' => TRUE,
+      ),
       'data' => array(
         'type' => 'text',
         'size' => 'medium',
       ),
     ),
-    'primary key' => array('x', 'y', 'zoom', 'layer'),
+    'primary key' => array('x', 'y', 'zoom', 'layer', 'language'),
   );
 
   $schema['simplegeo_tileservice_layer'] = array(
@@ -108,5 +113,20 @@ function simplegeo_tileservice_update_6001() {
   $schema = simplegeo_tileservice_schema();
   $table = $schema['simplegeo_tileservice_layer'];
   db_create_table(&$ret, 'simplegeo_tileservice_layer', $table);
+  return $ret;
+}
+
+function simplegeo_tileservice_update_6002() {
+  $ret = array();
+
+  db_add_field($ret, 'simplegeo_tileservice_tilecache', 'language', array(
+    'type' => 'char',
+    'length' => 2,
+    'not null' => TRUE,
+  ));
+  db_drop_primary_key($ret, 'simplegeo_tileservice_tilecache');
+  db_add_primary_key($ret, 'simplegeo_tileservice_tilecache', array('x', 'y', 'zoom', 'layer', 'language'));
+  db_query("DELETE FROM {simplegeo_tileservice_tilecache}");
+
   return $ret;
 }

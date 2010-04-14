@@ -35,6 +35,7 @@ function simplegeo_tileservice_simplegeo_map_plugin() {
 
 function simplegeo_tileservice_simplegeo_map_settings_alter($settings) {
   $settings['tileservice']['layers'] = simplegeo_tileservice_layer_list();
+  $settings['tileservice']['uri'] = url('geo/api/layers');
 }
 
 /**

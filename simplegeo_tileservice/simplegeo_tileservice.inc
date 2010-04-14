@@ -9,6 +9,7 @@ function _simplegeo_tileservice_index($z, $x, $y, $layers, $width=1, $height=1) 
 }
 
 function _simplegeo_tileservice_serve_tiles($zoom, $fromx, $fromy, $layers, $width, $height) {
+  global $language;
 
   // TODO: Implement allowed bounds and zoom check! /Anders
   $allowed_bounds = simple_geo_coordinates_to_array(variable_get('simplegeo_tileservice_allowed_bounds', SIMPLEGEOTILES_ALLOWED_BOUNDS));
@@ -31,10 +32,10 @@ function _simplegeo_tileservice_serve_tiles($zoom, $fromx, $fromy, $layers, $wid
 
       for ($y = $fromy; $y <= $toy; $y++) {
         for ($x = $fromx; $x <= $tox; $x++) {
-          $data = simplegeo_tileservice_read_cache($x, $y, $zoom, $layer);
+          $data = simplegeo_tileservice_read_cache($x, $y, $zoom, $language->language, $layer);
           if (!$data) {
-            $data = _simplegeo_tileservice_get_cluster($x, $y, $zoom, $layerdef);
-            simplegeo_tileservice_write_cache($x, $y, $zoom, $layer, $data);
+            $data = _simplegeo_tileservice_get_cluster($x, $y, $zoom, $language->language, $layerdef);
+            simplegeo_tileservice_write_cache($x, $y, $zoom, $language->language, $layer, $data);
           }
           if (!empty($data)) {
             $tiles_result[] = $data;
@@ -50,11 +51,11 @@ function _simplegeo_tileservice_serve_tiles($zoom, $fromx, $fromy, $layers, $wid
 }
 
 
-function simplegeo_tileservice_read_cache($x, $y, $zoom, $layer) {
+function simplegeo_tileservice_read_cache($x, $y, $zoom, $lang, $layer) {
   $sql =  "SELECT data FROM {simplegeo_tileservice_tilecache}
     WHERE x = %d AND y = %d AND zoom = %d AND layer = '%s'";
 
-  $res = db_query($sql, $x, $y, $zoom, $layer);
+  $res = db_query($sql, $x, $y, $zoom, $lang, $layer);
   if ($obj = db_fetch_object($res)) {
     return $obj->data;
   }
@@ -62,20 +63,20 @@ function simplegeo_tileservice_read_cache($x, $y, $zoom, $layer) {
   return NULL;
 }
 
-function simplegeo_tileservice_write_cache($x, $y, $zoom, $layer, $data) {
+function simplegeo_tileservice_write_cache($x, $y, $zoom, $lang, $layer, $data) {
   $cache_row = db_result(db_query("SELECT COUNT(x) FROM {simplegeo_tileservice_tilecache}
-    WHERE x = %d AND y = %d AND zoom = %d AND layer = '%s'", $x, $y, $zoom, $layer));
+    WHERE x = %d AND y = %d AND zoom = %d AND layer = '%s'", $x, $y, $zoom, $lang, $layer));
 
   if ($cache_row) {
     $sql =  "UPDATE {simplegeo_tileservice_tilecache}
       SET data = '%s'
-      WHERE x = %d AND y = %d AND zoom = %d AND layer = '%s'";
-    return db_query($sql, $data, $x, $y, $zoom, $layer);
+      WHERE x = %d AND y = %d AND zoom = %d AND language = '%s' AND layer = '%s'";
+    return db_query($sql, $data, $x, $y, $zoom, $lang, $layer);
   }
   else {
-    $sql =  "INSERT INTO {simplegeo_tileservice_tilecache} (x,y, zoom, layer, data)
-      VALUES (%d, %d, %d, '%s', '%s')";
-    return db_query($sql, $x, $y, $zoom, $layer, $data);
+    $sql =  "INSERT INTO {simplegeo_tileservice_tilecache} (x,y, zoom, language, layer, data)
+      VALUES (%d, %d, %d, '%s', '%s', '%s')";
+    return db_query($sql, $x, $y, $zoom, $lang, $layer, $data);
   }
 }
 
@@ -83,7 +84,7 @@ function simplegeo_tileservice_clear_cache($x, $y, $zoom, $layer) {
   $sql =  "DELETE FROM {simplegeo_tileservice_tilecache}
     WHERE x = %d AND y = %d AND zoom = %d AND layer = '%s'";
 
-  return db_query($sql, $x, $y, $zoom, $layer);
+  return db_query($sql, $x, $y, $zoom, $lang, $layer);
 }
 
 function simplegeo_tileservice_clear_node_cache($type, $position) {
@@ -116,7 +117,7 @@ function _simplegeo_tileservice_coord2tile($coords, $zoom) {
   return $tile->getTileCoord();
 }
 
-function _simplegeo_tileservice_get_cluster($x, $y, $zoom, $layer_definition) {
+function _simplegeo_tileservice_get_cluster($x, $y, $zoom, $lang, $layer_definition) {
   module_load_include('inc', 'simplegeo_api');
   $type = simplegeo_tileservice_get_layer_type($layer_definition->layer_type);
 
@@ -124,7 +125,7 @@ function _simplegeo_tileservice_get_cluster($x, $y, $zoom, $layer_definition) {
     require_once($type['file']);
   }
 
-  $data = call_user_func($type['load callback'], $x, $y, $zoom, $layer_definition, $type);
+  $data = call_user_func($type['load callback'], $x, $y, $zoom, $lang, $layer_definition, $type);
   if (!empty($data)) {
     // Specifie the max distance between markers to cluster on
     $distance = 50;
@@ -134,7 +135,7 @@ function _simplegeo_tileservice_get_cluster($x, $y, $zoom, $layer_definition) {
   return NULL;
 }
 
-function _simplegeo_tileservice_get_nodes($x, $y, $zoom, $layer, $type) {
+function _simplegeo_tileservice_get_nodes($x, $y, $zoom, $lang, $layer, $type) {
   // Switch zoom level (gmaptile users the old 17-0 levels instead of 0-17) TODO: fix this in gmaptile.php
   $zoom = 17 - $zoom;
   $top_left = _simplegeo_tileservice_tile2coord($x, $y, $zoom);
@@ -169,6 +170,7 @@ function _simplegeo_tileservice_get_nodes($x, $y, $zoom, $layer, $type) {
     $wheres = array(
       'n.status <> 0',
       "Contains(Envelope(GeomFromText('LineString(%s %s,%s %s)')), ps.position)",
+      "n.language = '%s'",
     );
     if (!empty($layer->conf['node_type'])) {
       $wheres[] = "n.type = '%s'";
@@ -189,7 +191,7 @@ function _simplegeo_tileservice_get_nodes($x, $y, $zoom, $layer, $type) {
 
     $sql .= " ORDER BY n.created";
 
-    $params = array($top_left['lat'], $top_left['long'], $bottom_right['lat'], $bottom_right['long']);
+    $params = array($top_left['lat'], $top_left['long'], $bottom_right['lat'], $bottom_right['long'], $lang);
     if (isset($layer->conf['node_type'])) {
       $params[] = $layer->conf['node_type'];
     }

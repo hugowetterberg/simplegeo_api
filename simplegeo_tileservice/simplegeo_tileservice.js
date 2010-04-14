@@ -49,7 +49,7 @@
       }
       if (names.length) {
         data.layers = names.join(',');
-        url = Drupal.settings.basePath + 'geo/api/layers';
+        url = Drupal.settings.simpleGeoMap.tileservice.uri;
       }
       return url;
     },

@@ -26,6 +26,10 @@ function simplegeo_solrapi_simplegeo_map_plugin() {
   return $plugins;
 }
 
+function simplegeo_solrapi_simplegeo_map_settings_alter($settings) {
+  $settings['solrapi']['uri'] = url('geo/api/search');
+}
+
 /**
  * Add the layer resource to the Simple Geo API.
  *

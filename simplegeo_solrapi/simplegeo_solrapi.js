@@ -29,7 +29,7 @@
       for (tid in selectedTids) {
         data.query += ' tid:' + tid;
       }
-      return Drupal.settings.basePath + 'geo/api/search';
+      return Drupal.settings.simpleGeoMap.solrapi.uri;
     },
     result: function(json, pushMarker) {
       var tid;

@@ -18,6 +18,7 @@ class SimplegeoSearchResource {
    * @return array
    */
   public static function index($z, $x, $y, $query='*:*', $page=0, $fields='', $params=array()) {
+    global $language;
     // Get required files
     module_load_include('inc', 'simplegeo_api');
 
@@ -49,6 +50,7 @@ class SimplegeoSearchResource {
       }
     }
     $query .= ' (' . join($tile_q, ' OR ') . ')';
+    $query .= ' language:' . $language->language;
 
     $res = SolrResource::index($query, $page, $fields, $params, array(
       'rows' => 500,

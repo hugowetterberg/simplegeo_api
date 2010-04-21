@@ -16,12 +16,12 @@
     if (typeof selectedTids[tid] !== 'undefined') {
       $(tag).addClass('active');
     }
-    item.appendTo(source.dialog);
+    item.appendTo($(source.dialog).children('ul'));
   },
   source = {
     title: Drupal.t('Filter'),
     init: function() {
-      return $('<ul id="simplegeomap-tag-filters" class="dialog"><div class="wrapper"></div></ul>');
+      return $('<div id="simplegeomap-tag-wrapper"><ul id="simplegeomap-tag-filters" class="dialog"></ul></div>');
     },
     query: function(data) {
       data.facets = 'tid';
@@ -35,7 +35,7 @@
       var tid;
       if (typeof json['items'] !== 'undefined') {
         tids = json.facets.tid;
-        source.dialog.empty();
+        $(source.dialog).children('ul').empty();
         for (tid in tids) {
           tidFilter(tid, tids[tid]);
         }

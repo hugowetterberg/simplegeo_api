@@ -32,6 +32,7 @@ class SimplegeoSearchResource {
       // Cluster offset can be used to cluster the markers for a different
       // zoom level than the one that's been requested.
       'cluster_offset' => 0,
+      'sort' => 'random_markers desc',
     );
     $params['cluster'] = (bool)$params['cluster'];
 

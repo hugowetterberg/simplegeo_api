@@ -25,6 +25,7 @@
     },
     query: function(data) {
       data.facets = 'tid';
+      data.facet_limit = 60;
       data.query = '';
       for (tid in selectedTids) {
         data.query += ' tid:' + tid;

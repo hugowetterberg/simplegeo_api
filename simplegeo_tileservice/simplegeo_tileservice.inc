@@ -20,8 +20,11 @@ function _simplegeo_tileservice_serve_tiles($zoom, $fromx, $fromy, $layers, $wid
 
   $layer_definitions = simplegeo_tileservice_layer_load_all();
 
+
   $tox = $fromx + $width;
   $toy = $fromy + $height;
+  $fromx = max(0, $fromx);
+  $fromy = max(0, $fromy);
 
   $layer_result = array();
 

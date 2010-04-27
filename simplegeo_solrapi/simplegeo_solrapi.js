@@ -3,6 +3,7 @@
   tidFilter = function (tid, term) {
     var item = $('<li></li>'),
       tag = $('<a></a>').text(term.name).appendTo(item).click(function() {
+      var ti, tidList = [];
       if (typeof selectedTids[tid] !== 'undefined') {
         $(tag).addClass('active');
         delete selectedTids[tid];
@@ -11,6 +12,10 @@
         $(tag).removeClass('active');
         selectedTids[tid] = term;
       }
+      for (ti in selectedTids) {
+        tidList.push(ti);
+      }
+      SimpleGeoMap.urlRepresentation(tidList.join('/'));
       SimpleGeoMap.updateMarkers(true);
     });
     if (typeof selectedTids[tid] !== 'undefined') {
@@ -20,7 +25,13 @@
   },
   source = {
     title: Drupal.t('Filter'),
-    init: function() {
+    init: function(hash) {
+      var tid;
+      if (hash) {
+        for (tid in hash) {
+          selectedTids[hash[tid]] = hash[tid];
+        }
+      }
       return $('<div id="simplegeomap-tag-wrapper"><ul id="simplegeomap-tag-filters" class="dialog"></ul></div>');
     },
     query: function(data) {

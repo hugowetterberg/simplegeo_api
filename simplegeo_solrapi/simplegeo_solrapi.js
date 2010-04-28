@@ -1,5 +1,8 @@
 (function(SimpleGeoMap){
   var tids = [], selectedTids = {}, dialog, staticQuery = {},
+  // Skane specific
+  from, to,
+  // End skane specific
   urlRepresentation = function(tidList) {
     var ti, rep = [], name;
     rep.push('tags=' + escape(tidList.join(',')));
@@ -45,6 +48,14 @@
               selectedTids[tid] = tid;
             });
             break;
+          // Skane-specific
+          case 'from':
+            from = pt[1];
+            break;
+          case 'to':
+            to = pt[1];
+            break;
+          // End skane specific
           default:
             staticQuery[pt[0]] = pt[1];
             break;
@@ -68,6 +79,16 @@
       for (tid in selectedTids) {
         data.query += ' tid:' + tid;
       }
+
+      // Skane specific
+      if (from && to) {
+        from += 'T00:00:00Z';
+        to += 'T00:00:00Z';
+        data.query += ' dm_starts:[' + from + '/DAY TO ' + to + '/DAY]';
+      }
+      console.log(data.query);
+      // End skane specific
+
       return Drupal.settings.simpleGeoMap.solrapi.uri;
     },
     result: function(json, pushMarker) {

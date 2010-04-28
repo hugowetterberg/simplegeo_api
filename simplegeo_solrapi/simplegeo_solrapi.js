@@ -1,5 +1,13 @@
 (function(SimpleGeoMap){
-  var tids = [], selectedTids = {}, dialog,
+  var tids = [], selectedTids = {}, dialog, staticQuery = {},
+  urlRepresentation = function(tidList) {
+    var ti, rep = [], name;
+    rep.push('tags=' + escape(tidList.join(',')));
+    for (name in staticQuery) {
+      rep.push(name + '=' + escape(staticQuery[name]));
+    }
+    return rep.join('/');
+  },
   tidFilter = function (tid, term) {
     var item = $('<li></li>'),
       tag = $('<a></a>').text(term.name).appendTo(item).click(function() {
@@ -15,7 +23,7 @@
       for (ti in selectedTids) {
         tidList.push(ti);
       }
-      SimpleGeoMap.urlRepresentation(tidList.join('/'));
+      SimpleGeoMap.urlRepresentation(urlRepresentation(tidList));
       SimpleGeoMap.updateMarkers(true);
     });
     if (typeof selectedTids[tid] !== 'undefined') {
@@ -26,18 +34,37 @@
   source = {
     title: Drupal.t('Filter'),
     init: function(hash) {
-      var tid;
-      if (hash) {
-        for (tid in hash) {
-          selectedTids[hash[tid]] = hash[tid];
+      var frag, pt;
+
+      for (frag in hash) {
+        pt = hash[frag].split('=');
+        pt[1] = unescape(pt[1]);
+        switch (pt[0]) {
+          case 'tags':
+            $.each(pt[1].split(','), function(idx, tid) {
+              selectedTids[tid] = tid;
+            });
+            break;
+          default:
+            staticQuery[pt[0]] = pt[1];
+            break;
         }
       }
       return $('<div id="simplegeomap-tag-wrapper"><ul id="simplegeomap-tag-filters" class="dialog"></ul></div>');
     },
     query: function(data) {
+      var statType;
       data.facets = 'tid';
       data.facet_limit = 60;
       data.query = '';
+      for (statType in staticQuery) {
+        if (statType == 'text') {
+          data.query += staticQuery[statType];
+        }
+        else {
+          data.query += ' ' + statType + ':' + staticQuery[statType];
+        }
+      }
       for (tid in selectedTids) {
         data.query += ' tid:' + tid;
       }

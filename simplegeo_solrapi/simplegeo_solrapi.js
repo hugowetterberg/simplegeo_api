@@ -86,7 +86,6 @@
         to += 'T00:00:00Z';
         data.query += ' dm_starts:[' + from + '/DAY TO ' + to + '/DAY]';
       }
-      console.log(data.query);
       // End skane specific
 
       return Drupal.settings.simpleGeoMap.solrapi.uri;

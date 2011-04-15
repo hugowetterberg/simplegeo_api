@@ -44,7 +44,7 @@ function simplegeo_api_services_resources() {
             'type' => 'string',
             'description' => 'The the comma-separated list of nids of the nodes to return.',
             'default value' => '',
-            'source' => array('param' => 'nids'),
+            'source' => array('params' => 'nids'),
           ),
         ),
         'access arguments' => array('access content'),

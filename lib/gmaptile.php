@@ -78,7 +78,7 @@ class GMapTile {
 		$myX = $this->p->x;
 		$myY = $this->p->y;
 		
-		for($i = 17; $i > $this->z; $i--) {
+		for($i = 21; $i > $this->z; $i--) {
 			$rx = (fmod($myX, 2));
 			$myX = floor($myX / 2);
 			$ry = (fmod($myY, 2));
@@ -153,7 +153,7 @@ class GMapTile {
 		self::$bc = 2*M_PI;
 		self::$Wa = M_PI/180;
 		
-		for ($d = 17; $d >= 0; --$d) {
+		for ($d = 21; $d >= 0; --$d) {
 			self::$pixelsPerLonDegree[$d] = self::$c / 360;
 			self::$pixelsPerLonRadian[$d] = self::$c / self::$bc;
 			$e = self::$c / 2;

@@ -103,8 +103,8 @@ function simplegeo_api_tile2coord($x, $y, $zoom) {
 }
 
 function simplegeo_api_coord2tile($coords, $zoom) {
-  // Switch zoom level (gmaptile users the old 17-0 levels instead of 0-17) TODO: fix this in gmaptile.php
-  $zoom = 17 - $zoom;
+  // Switch zoom level (gmaptile users the old 21-0 levels instead of 0-21) TODO: fix this in gmaptile.php
+  $zoom = 21 - $zoom;
   $point = simple_geo_coordinates_to_array($coords);
   $tile = new GMapTile($point[0], $point[1], $zoom);
   return $tile->getTileCoord();

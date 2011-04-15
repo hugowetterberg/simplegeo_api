@@ -95,8 +95,8 @@ function simplegeo_tileservice_clear_node_cache($type, $position) {
 
   foreach ($layerdef as $layer => $layer_info ) {
     if ($layer_info->layer_type == 'node_sql' && isset($layer_info->conf['node_type']) && $layer_info->conf['node_type'] == $type) {
-      // Clear the cache for all zoom levels (we currently use 7-17);
-      for ($zoom=7; $zoom <= 17; $zoom++) {
+      // Clear the cache for all zoom levels (we currently use 7-21);
+      for ($zoom=7; $zoom <= 21; $zoom++) {
         $coords = _simplegeo_tileservice_coord2tile($position, $zoom);
         simplegeo_tileservice_clear_cache($coords->x, $coords->y, $zoom, $layer);
       }
@@ -114,7 +114,7 @@ function _simplegeo_tileservice_tile2coord($x, $y, $zoom) {
 function _simplegeo_tileservice_coord2tile($coords, $zoom) {
   module_load_include('inc', 'simplegeo_api');
   // Switch zoom level (gmaptile users the old 17-0 levels instead of 0-17) TODO: fix this in gmaptile.php
-  $zoom = 17 - $zoom;
+  $zoom = 21 - $zoom;
   $point = simple_geo_coordinates_to_array($coords);
   $tile = new GMapTile($point[0], $point[1], $zoom);
   return $tile->getTileCoord();
@@ -140,7 +140,7 @@ function _simplegeo_tileservice_get_cluster($x, $y, $zoom, $lang, $layer_definit
 
 function _simplegeo_tileservice_get_nodes($x, $y, $zoom, $lang, $layer, $type) {
   // Switch zoom level (gmaptile users the old 17-0 levels instead of 0-17) TODO: fix this in gmaptile.php
-  $zoom = 17 - $zoom;
+  $zoom = 21 - $zoom;
   $top_left = _simplegeo_tileservice_tile2coord($x, $y, $zoom);
   $bottom_right = _simplegeo_tileservice_tile2coord($x+1, $y+1, $zoom);
   $nodes = array();

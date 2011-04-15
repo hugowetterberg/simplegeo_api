@@ -182,6 +182,14 @@ function _simplegeo_tileservice_node_sql_settings($layer) {
     '#default_value' => $layer->conf['node_type'],
     '#required' => TRUE,
   );
+
+  $form['clustering'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable server side clustering'),
+    '#description' => t('Server side clustering cluster markers close to each other. This can be combined with client side clustering.'),
+    '#default_value' => isset($layer->conf['clustering']) ? $layer->conf['clustering'] : TRUE,
+  );
+
   $form['simple'] = array(
      '#type' => 'fieldset',
      '#title' => t('Simple filter'),
@@ -250,6 +258,7 @@ function _simplegeo_tileservice_node_sql_settings_submit($values) {
     'max_age' => $values['max_age'],
     'updated_since' => $values['updated_since'],
     'view' => $values['view'],
+    'clustering' => $values['clustering'],
   );
 }
 

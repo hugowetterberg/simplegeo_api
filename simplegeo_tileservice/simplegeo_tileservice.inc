@@ -39,7 +39,7 @@ function _simplegeo_tileservice_serve_tiles($zoom, $fromx, $fromy, $layers, $wid
         for ($x = $fromx; $x <= $tox; $x++) {
           $data = simplegeo_tileservice_read_cache($x, $y, $zoom, $language->language, $layer);
           if (!$data) {
-            $data = _simplegeo_tileservice_get_cluster($x, $y, $zoom, $language->language, $layerdef);
+            $data = _simplegeo_tileservice_get_markers($x, $y, $zoom, $language->language, $layerdef);
             simplegeo_tileservice_write_cache($x, $y, $zoom, $language->language, $layer, $data);
           }
           if (!empty($data)) {
@@ -122,7 +122,7 @@ function _simplegeo_tileservice_coord2tile($coords, $zoom) {
   return $tile->getTileCoord();
 }
 
-function _simplegeo_tileservice_get_cluster($x, $y, $zoom, $lang, $layer_definition) {
+function _simplegeo_tileservice_get_markers($x, $y, $zoom, $lang, $layer_definition) {
   module_load_include('inc', 'simplegeo_api');
   $type = simplegeo_tileservice_get_layer_type($layer_definition->layer_type);
 
@@ -132,10 +132,13 @@ function _simplegeo_tileservice_get_cluster($x, $y, $zoom, $lang, $layer_definit
 
   $data = call_user_func($type['load callback'], $x, $y, $zoom, $lang, $layer_definition, $type);
   if (!empty($data)) {
-    // Specifie the max distance between markers to cluster on
-    $distance = 50;
-    $cluster = simplegeo_api_cluster($data, 50, $zoom);
-    return json_encode($cluster);
+    // Cluster if enabled. Default is enabled.
+    if (!isset($layer_definition->conf['clustering']) || $layer_definition->conf['clustering']) {
+      // Specify the max distance between markers to cluster on
+      $distance = 50;
+      $data = simplegeo_api_cluster($data, 50, $zoom);
+    }
+    return json_encode($data);
   }
   return NULL;
 }

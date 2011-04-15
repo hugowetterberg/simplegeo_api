@@ -5,7 +5,9 @@ function _simplegeo_tileservice_index($z, $x, $y, $layers, $width=1, $height=1) 
   if (is_string($layers)) {
     $layers = explode(',', $layers);
   }
-  return _simplegeo_tileservice_serve_tiles($z, $x, $y, $layers, $width, $height);
+  // Convert values to integers since services doesn't seem to do that for us
+  // even if it's specified to be "int" in the resource definition.
+  return _simplegeo_tileservice_serve_tiles((int)$z, (int)$x, (int)$y, $layers, (int)$width, (int)$height);
 }
 
 function _simplegeo_tileservice_serve_tiles($zoom, $fromx, $fromy, $layers, $width, $height) {

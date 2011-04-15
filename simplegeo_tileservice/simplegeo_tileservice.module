@@ -191,7 +191,7 @@ function _simplegeo_tileservice_node_sql_settings($layer) {
   $form['simple']['max_age'] = array(
     '#type' => 'textfield',
     '#title' => t('Max age'),
-    '#description' => t('Show only content that is younger than the specifed time. Examples: 1 day, 1 week.'),
+    '#description' => t('Show only content that is younger than the specified time. Examples: 1 day, 1 week.'),
     '#default_value' => $layer->conf['max_age'],
     '#element_validate' => array('_simplegeo_tileservice_node_validate_time_input'),
   );
